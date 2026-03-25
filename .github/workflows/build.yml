@@ -37,7 +37,8 @@ jobs:
             Jellyfin.Plugin.JellySub/Jellyfin.Plugin.JellySub.csproj \
             --configuration Release \
             --no-build \
-            --output ./artifacts
+            --output ./artifacts \
+            --verbosity detailed 2>&1 | tail -40
 
       - name: List artifacts
         run: ls -lh artifacts/
