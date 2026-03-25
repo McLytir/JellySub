@@ -48,7 +48,17 @@ jobs:
             --configuration Release \
             --no-restore \
             --output ./artifacts \
-            /p:Version=${{ steps.ver.outputs.VER }}
+            /p:Version=${{ steps.ver.outputs.VER }} \
+            --verbosity normal 2>&1 | tee /tmp/publish.log
+          # Re-check exit code (tee always exits 0)
+          test ${PIPESTATUS[0]} -eq 0
+
+      - name: Upload publish log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: publish-log
+          path: /tmp/publish.log
 
       - name: List artifacts
         run: ls -lh ./artifacts/
