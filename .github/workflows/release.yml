@@ -48,19 +48,16 @@ jobs:
             --verbosity detailed 2>&1 | tail -60
 
       # ── Package ────────────────────────────────────────────────────────
+      - name: List artifacts
+        run: ls -lh artifacts/
+
       - name: Create zip
         run: |
           cd artifacts
-          # Include the plugin DLL and its dependency
+          ls -la
           zip -j "../${{ steps.ver.outputs.ZIP }}" \
             Jellyfin.Plugin.JellySub.dll \
-            HtmlAgilityPack.dll || true
-
-          # Fallback: grab any dll that isn't a Jellyfin/Microsoft/System dll
-          if [ ! -f "../${{ steps.ver.outputs.ZIP }}" ]; then
-            zip -j "../${{ steps.ver.outputs.ZIP }}" \
-              Jellyfin.Plugin.JellySub.dll
-          fi
+            HtmlAgilityPack.dll
 
       # ── Checksum ───────────────────────────────────────────────────────
       - name: Compute MD5
