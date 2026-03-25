@@ -43,27 +43,25 @@ jobs:
           dotnet publish \
             Jellyfin.Plugin.JellySub/Jellyfin.Plugin.JellySub.csproj \
             --configuration Release \
-            --output ./artifacts \
-            /p:Version=${{ steps.ver.outputs.VER }} \
-            --verbosity detailed 2>&1 | tail -60
+            --output "${{ github.workspace }}/artifacts" \
+            /p:Version=${{ steps.ver.outputs.VER }}
+          echo "--- artifacts ---"
+          ls -lh "${{ github.workspace }}/artifacts"
 
       # ── Package ────────────────────────────────────────────────────────
-      - name: List artifacts
-        run: ls -lh artifacts/
-
       - name: Create zip
         run: |
-          cd artifacts
-          ls -la
-          zip -j "../${{ steps.ver.outputs.ZIP }}" \
+          cd "${{ github.workspace }}/artifacts"
+          zip -j "${{ github.workspace }}/${{ steps.ver.outputs.ZIP }}" \
             Jellyfin.Plugin.JellySub.dll \
             HtmlAgilityPack.dll
+          echo "Zip created: $(ls -lh ${{ github.workspace }}/${{ steps.ver.outputs.ZIP }})"
 
       # ── Checksum ───────────────────────────────────────────────────────
       - name: Compute MD5
         id: md5
         run: |
-          CS=$(md5sum "${{ steps.ver.outputs.ZIP }}" | awk '{print $1}')
+          CS=$(md5sum "${{ github.workspace }}/${{ steps.ver.outputs.ZIP }}" | awk '{print $1}')
           echo "CHECKSUM=$CS" >> $GITHUB_OUTPUT
           echo "MD5: $CS"
 
@@ -110,6 +108,6 @@ jobs:
           tag_name:  ${{ steps.ver.outputs.TAG }}
           name:      "JellySub ${{ steps.ver.outputs.TAG }}"
           body_file: ${{ steps.changelog.outputs.FILE }}
-          files:     ${{ steps.ver.outputs.ZIP }}
+          files:     ${{ github.workspace }}/${{ steps.ver.outputs.ZIP }}
           draft:     false
           prerelease: false
