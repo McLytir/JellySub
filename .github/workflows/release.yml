@@ -41,24 +41,20 @@ jobs:
       - name: Restore
         run: dotnet restore JellySub.sln
 
+      - name: Build
+        run: |
+          dotnet build JellySub.sln \
+            --configuration Release \
+            --no-restore \
+            /p:Version=${{ steps.ver.outputs.VER }}
+
       - name: Publish plugin
         run: |
           dotnet publish \
             Jellyfin.Plugin.JellySub/Jellyfin.Plugin.JellySub.csproj \
             --configuration Release \
-            --no-restore \
-            --output ./artifacts \
-            /p:Version=${{ steps.ver.outputs.VER }} \
-            --verbosity normal 2>&1 | tee /tmp/publish.log
-          # Re-check exit code (tee always exits 0)
-          test ${PIPESTATUS[0]} -eq 0
-
-      - name: Upload publish log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: publish-log
-          path: /tmp/publish.log
+            --no-build \
+            --output ./artifacts
 
       - name: List artifacts
         run: ls -lh ./artifacts/
