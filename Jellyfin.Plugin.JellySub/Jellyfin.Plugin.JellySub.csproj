@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Jellyfin APIs (referenced but not shipped — already present in the host) -->
+    <PackageReference Include="Jellyfin.Common"     Version="10.*-*" PrivateAssets="All" />
+    <PackageReference Include="Jellyfin.Controller" Version="10.*-*" PrivateAssets="All" />
+
+    <!-- HTML scraping -->
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.62" />
+
+    <!-- HTTP client factory support -->
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+  </ItemGroup>
+
+  <!-- Embed all web pages as resources -->
+  <ItemGroup>
+    <EmbeddedResource Include="Web\*.html" />
+    <EmbeddedResource Include="Web\*.js"   />
+    <None            Remove="Web\*.html"   />
+    <None            Remove="Web\*.js"     />
+  </ItemGroup>
+
+</Project>

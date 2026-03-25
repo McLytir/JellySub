@@ -1,0 +1,101 @@
+<div id="JellySubSeriesPage"
+     data-role="page"
+     class="page type-interior pluginConfigurationPage"
+     data-controller="__plugin/jellysubseriesjs">
+
+  <div data-role="content">
+    <div class="content-primary">
+
+      <!-- ── Header ─────────────────────────────────────────────────────── -->
+      <div class="sectionTitleContainer flex align-items-center" style="margin-bottom:16px">
+        <a is="emby-linkbutton" href="/web/configurationpage?name=jellysub"
+           style="margin-right:12px;font-size:20px">←</a>
+        <h2 class="sectionTitle" style="margin:0">📂 Series / Folder Download</h2>
+      </div>
+
+      <!-- ── Setup bar ─────────────────────────────────────────────────── -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px">
+        <div class="inputContainer" style="flex:1;min-width:240px;margin:0">
+          <label class="inputLabel" for="seriesItemId">Series or Season — Jellyfin Item ID</label>
+          <input is="emby-input" type="text" id="seriesItemId" placeholder="UUID of the series / season" />
+        </div>
+        <div class="inputContainer" style="width:130px;margin:0">
+          <label class="inputLabel" for="seriesLang">Language</label>
+          <input is="emby-input" type="text" id="seriesLang" placeholder="en" />
+        </div>
+        <div style="display:flex;gap:6px">
+          <button is="emby-button" type="button" class="raised" id="btnModeAuto">Auto</button>
+          <button is="emby-button" type="button" class="raised button-alt" id="btnModeGuided">Guided</button>
+        </div>
+        <button is="emby-button" type="button" class="raised" id="btnAnalyze">Analyse</button>
+      </div>
+
+      <div id="modeHint" style="font-size:12px;color:#aaa;margin-bottom:12px;display:none"></div>
+
+      <!-- ── Episode table ──────────────────────────────────────────────── -->
+      <div id="episodeSection" style="display:none">
+        <h3 class="sectionTitle" id="seriesName"></h3>
+
+        <!-- Guided: ep1 search pane -->
+        <div id="ep1Pane" style="display:none;background:rgba(255,255,255,.05);border-radius:6px;padding:14px;margin-bottom:16px">
+          <p style="margin:0 0 10px;font-weight:600">Step 1 — Pick subtitle for episode 1</p>
+          <div id="ep1Results"></div>
+          <div id="ep1Searching" style="display:none;color:#aaa;padding:8px 0">Searching…</div>
+        </div>
+
+        <!-- Episode list -->
+        <div id="episodeList"></div>
+
+        <!-- Player test controls -->
+        <div id="testSection" style="display:none;background:rgba(255,255,255,.05);border-radius:6px;padding:14px;margin:16px 0">
+          <p style="margin:0 0 8px;font-weight:600">🎬 Test episode 1 in your local player</p>
+          <p style="font-size:12px;color:#aaa;margin:0 0 10px">
+            VLC command to run on the server machine (copy &amp; paste):
+          </p>
+          <code id="vlcCmd" style="display:block;background:rgba(0,0,0,.3);padding:8px;border-radius:4px;font-size:12px;word-break:break-all"></code>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <button is="emby-button" type="button" class="raised button-alt" id="btnCopyCmd">Copy command</button>
+            <a is="emby-linkbutton" id="btnXspf" href="#" class="raised button-alt" download="jellysub-test.xspf">Download XSPF playlist</a>
+            <button is="emby-button" type="button" class="raised" id="btnSyncAfterTest">Re-sync after playtest…</button>
+          </div>
+
+          <!-- Sync after test -->
+          <div id="syncPanel" style="display:none;margin-top:12px;border-top:1px solid rgba(255,255,255,.1);padding-top:12px">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+              <div class="selectContainer" style="min-width:200px;margin:0">
+                <label class="selectLabel" for="syncTool">Sync tool</label>
+                <select is="emby-select" id="syncTool" class="emby-select-withcolor">
+                  <option value="ffsubsync">ffsubsync (audio-based)</option>
+                  <option value="alass">alass (reference subtitle)</option>
+                </select>
+              </div>
+              <div class="inputContainer" id="refSubRow" style="flex:1;min-width:200px;margin:0;display:none">
+                <label class="inputLabel" for="refSubPath">Reference subtitle path (for alass)</label>
+                <input is="emby-input" type="text" id="refSubPath" placeholder="/path/to/reference.en.srt" />
+              </div>
+              <button is="emby-button" type="button" class="raised" id="btnRunSync">Run sync</button>
+            </div>
+            <p id="syncStatus" style="margin:8px 0 0;font-size:12px;color:#aaa"></p>
+          </div>
+        </div>
+
+        <!-- Confirm + download -->
+        <div id="confirmSection" style="display:none;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px">
+          <span id="matchSummary" style="color:#aaa;font-size:13px"></span>
+          <button is="emby-button" type="button" class="raised" id="btnConfirmDownload">
+            ✓ Download all
+          </button>
+        </div>
+
+        <!-- Batch progress -->
+        <div id="batchProgress" style="display:none;margin-top:14px">
+          <div style="background:rgba(255,255,255,.1);border-radius:4px;height:6px;margin-bottom:8px">
+            <div id="progressBar" style="background:#2196F3;height:100%;border-radius:4px;width:0;transition:width .3s"></div>
+          </div>
+          <p id="batchStatus" style="font-size:13px;color:#aaa;margin:0"></p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

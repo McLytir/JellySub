@@ -1,0 +1,117 @@
+name: "🚀 Release"
+
+# Triggered by pushing a version tag: git tag v1.0.0 && git push --tags
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write   # create releases + push manifest commit
+
+jobs:
+  release:
+    name: Build, package and publish
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── Checkout ───────────────────────────────────────────────────────
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0           # full history so we can push back to main
+
+      # ── .NET ───────────────────────────────────────────────────────────
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      # ── Derive version from tag (strip leading v) ───────────────────
+      - name: Parse version
+        id: ver
+        run: |
+          TAG="${GITHUB_REF_NAME}"          # e.g.  v1.2.3
+          VER="${TAG#v}"                    # e.g.  1.2.3
+          # Jellyfin needs 4-part versions: 1.2.3 → 1.2.3.0
+          [[ "$VER" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && VER="${VER}.0"
+          echo "TAG=$TAG"   >> $GITHUB_OUTPUT
+          echo "VER=$VER"   >> $GITHUB_OUTPUT
+          echo "ZIP=jellysub_${VER}.zip" >> $GITHUB_OUTPUT
+
+      # ── Build ──────────────────────────────────────────────────────────
+      - name: Publish plugin
+        run: |
+          dotnet publish \
+            Jellyfin.Plugin.JellySub/Jellyfin.Plugin.JellySub.csproj \
+            --configuration Release \
+            --output ./artifacts \
+            /p:Version=${{ steps.ver.outputs.VER }}
+
+      # ── Package ────────────────────────────────────────────────────────
+      - name: Create zip
+        run: |
+          cd artifacts
+          # Include the plugin DLL and its dependency
+          zip -j "../${{ steps.ver.outputs.ZIP }}" \
+            Jellyfin.Plugin.JellySub.dll \
+            HtmlAgilityPack.dll || true
+
+          # Fallback: grab any dll that isn't a Jellyfin/Microsoft/System dll
+          if [ ! -f "../${{ steps.ver.outputs.ZIP }}" ]; then
+            zip -j "../${{ steps.ver.outputs.ZIP }}" \
+              Jellyfin.Plugin.JellySub.dll
+          fi
+
+      # ── Checksum ───────────────────────────────────────────────────────
+      - name: Compute MD5
+        id: md5
+        run: |
+          CS=$(md5sum "${{ steps.ver.outputs.ZIP }}" | awk '{print $1}')
+          echo "CHECKSUM=$CS" >> $GITHUB_OUTPUT
+          echo "MD5: $CS"
+
+      # ── Extract changelog for this tag ─────────────────────────────────
+      - name: Extract changelog
+        id: changelog
+        run: |
+          # Read CHANGELOG.md section for this tag, or fall back to a default
+          if [ -f CHANGELOG.md ]; then
+            SECTION=$(awk "/^## \[${{ steps.ver.outputs.TAG }}\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md)
+            if [ -z "$SECTION" ]; then
+              SECTION="See [CHANGELOG.md](https://github.com/McLytir/JellySub/blob/main/CHANGELOG.md)"
+            fi
+          else
+            SECTION="See release notes."
+          fi
+          # Write to file (avoids shell quoting issues)
+          printf '%s' "$SECTION" > /tmp/changelog_section.txt
+          echo "FILE=/tmp/changelog_section.txt" >> $GITHUB_OUTPUT
+
+      # ── Update manifest.json ───────────────────────────────────────────
+      - name: Update manifest.json
+        run: |
+          python3 scripts/update_manifest.py \
+            --version   "${{ steps.ver.outputs.VER }}" \
+            --checksum  "${{ steps.md5.outputs.CHECKSUM }}" \
+            --source-url "https://github.com/McLytir/JellySub/releases/download/${{ steps.ver.outputs.TAG }}/${{ steps.ver.outputs.ZIP }}" \
+            --changelog "$(cat ${{ steps.changelog.outputs.FILE }})"
+
+      # ── Commit updated manifest back to main ───────────────────────────
+      - name: Commit manifest
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add manifest.json
+          git diff --cached --quiet || \
+            git commit -m "chore: update manifest for ${{ steps.ver.outputs.TAG }} [skip ci]"
+          git push origin HEAD:main
+
+      # ── Create GitHub Release ──────────────────────────────────────────
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name:  ${{ steps.ver.outputs.TAG }}
+          name:      "JellySub ${{ steps.ver.outputs.TAG }}"
+          body_file: ${{ steps.changelog.outputs.FILE }}
+          files:     ${{ steps.ver.outputs.ZIP }}
+          draft:     false
+          prerelease: false

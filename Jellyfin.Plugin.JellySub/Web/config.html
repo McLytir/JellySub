@@ -1,0 +1,135 @@
+<div id="JellySubConfigPage"
+     data-role="page"
+     class="page type-interior pluginConfigurationPage"
+     data-controller="__plugin/jellysubjs">
+
+  <div data-role="content">
+    <div class="content-primary">
+
+      <!-- ── Header ─────────────────────────────────────────────────────── -->
+      <div class="sectionTitleContainer flex align-items-center">
+        <h2 class="sectionTitle">🎬 JellySub</h2>
+        <a is="emby-linkbutton" href="/web/configurationpage?name=jellysubsearch"
+           class="raised button-alt headerHelpButton" style="margin-left:auto">
+          🔍 Search Subtitles
+        </a>
+        <a is="emby-linkbutton" href="/web/configurationpage?name=jellysubseries"
+           class="raised button-alt headerHelpButton" style="margin-left:8px">
+          📂 Series Download
+        </a>
+        <a is="emby-linkbutton" href="/web/configurationpage?name=jellysubscan"
+           class="raised button-alt headerHelpButton" style="margin-left:8px">
+          🔄 Library Scan
+        </a>
+      </div>
+
+      <form id="jellySubConfigForm">
+
+        <!-- ── Sources ──────────────────────────────────────────────────── -->
+        <div class="verticalSection">
+          <h3 class="sectionTitle">Subtitle Sources</h3>
+          <p class="fieldDescription">
+            Enable / disable sources and drag to set priority (top = highest).
+          </p>
+          <div id="sourceList" style="max-width:480px"></div>
+        </div>
+
+        <!-- ── Languages ────────────────────────────────────────────────── -->
+        <div class="verticalSection">
+          <h3 class="sectionTitle">Preferred Languages</h3>
+          <p class="fieldDescription">
+            Ordered list of BCP-47 language codes (e.g. <code>en</code>, <code>fr</code>,
+            <code>de</code>). First entry = highest priority.
+          </p>
+          <div id="langList" style="max-width:480px; margin-bottom:8px"></div>
+          <div style="display:flex; gap:8px; align-items:center; max-width:480px">
+            <input is="emby-input" type="text" id="newLang"
+                   placeholder="e.g. en" style="flex:1" />
+            <button is="emby-button" type="button" id="addLangBtn" class="raised">Add</button>
+          </div>
+          <label style="margin-top:12px; display:flex; align-items:center; gap:8px">
+            <input is="emby-checkbox" type="checkbox" id="fallbackLang" />
+            <span>Fall back to any language when preferred is unavailable</span>
+          </label>
+        </div>
+
+        <!-- ── Download behaviour ───────────────────────────────────────── -->
+        <div class="verticalSection">
+          <h3 class="sectionTitle">Download Behaviour</h3>
+
+          <div class="selectContainer">
+            <label class="selectLabel" for="defaultMode">Default mode when clicking a media item</label>
+            <select is="emby-select" id="defaultMode" class="emby-select-withcolor">
+              <option value="Assisted">Assisted — auto-search, you pick</option>
+              <option value="Auto">Auto — silent best-match download</option>
+            </select>
+          </div>
+
+          <label style="display:flex; align-items:center; gap:8px; margin-top:12px">
+            <input is="emby-checkbox" type="checkbox" id="overwriteExisting" />
+            <span>Overwrite existing subtitle files</span>
+          </label>
+
+          <div class="inputContainer" style="margin-top:12px; max-width:240px">
+            <label class="inputLabel" for="minDownloads">Minimum download count (0 = accept all)</label>
+            <input is="emby-input" type="number" id="minDownloads" min="0" value="0" />
+          </div>
+        </div>
+
+        <!-- ── Library scan schedule ────────────────────────────────────── -->
+        <div class="verticalSection">
+          <h3 class="sectionTitle">Library Scan Schedule</h3>
+          <div class="selectContainer">
+            <label class="selectLabel" for="scanSchedule">Auto-scan trigger</label>
+            <select is="emby-select" id="scanSchedule" class="emby-select-withcolor">
+              <option value="Manual">Manual only</option>
+              <option value="AfterLibraryRefresh">After every library refresh</option>
+              <option value="Daily">Daily</option>
+              <option value="Weekly">Weekly</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ── Sync tools ────────────────────────────────────────────────── -->
+        <div class="verticalSection">
+          <h3 class="sectionTitle">Sync Tools</h3>
+          <div id="syncToolsSection"></div>
+
+          <div class="selectContainer" style="margin-top:16px; max-width:320px">
+            <label class="selectLabel" for="autoSync">Auto-sync after every download</label>
+            <select is="emby-select" id="autoSync" class="emby-select-withcolor">
+              <option value="Off">Off</option>
+              <option value="Ffsubsync">ffsubsync (audio-based)</option>
+              <option value="Alass">alass (reference-subtitle)</option>
+            </select>
+          </div>
+
+          <label style="display:flex; align-items:center; gap:8px; margin-top:12px">
+            <input is="emby-checkbox" type="checkbox" id="syncKeepOriginal" />
+            <span>Keep original subtitle alongside synced version</span>
+          </label>
+
+          <div class="inputContainer" style="margin-top:12px; max-width:480px">
+            <label class="inputLabel" for="ffsubsyncPath">ffsubsync executable path (leave empty to use PATH)</label>
+            <input is="emby-input" type="text" id="ffsubsyncPath" placeholder="/usr/local/bin/ffsubsync" />
+          </div>
+          <div class="inputContainer" style="max-width:480px">
+            <label class="inputLabel" for="alassPath">alass executable path (leave empty to use PATH)</label>
+            <input is="emby-input" type="text" id="alassPath" placeholder="/usr/local/bin/alass" />
+          </div>
+        </div>
+
+        <!-- ── Save ─────────────────────────────────────────────────────── -->
+        <div>
+          <p id="saveStatus" style="color:#4CAF50; display:none; margin-bottom:8px">
+            ✓ Settings saved
+          </p>
+          <button is="emby-button" type="submit" class="raised button-submit">
+            <span>Save</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>

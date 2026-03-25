@@ -1,0 +1,83 @@
+<div id="JellySubScanPage"
+     data-role="page"
+     class="page type-interior pluginConfigurationPage"
+     data-controller="__plugin/jellysubscanjs">
+
+  <div data-role="content">
+    <div class="content-primary">
+
+      <!-- ── Header ─────────────────────────────────────────────────────── -->
+      <div class="sectionTitleContainer flex align-items-center" style="margin-bottom:16px">
+        <a is="emby-linkbutton" href="/web/configurationpage?name=jellysub"
+           style="margin-right:12px;font-size:20px">←</a>
+        <h2 class="sectionTitle" style="margin:0">🔄 Library Scan</h2>
+      </div>
+
+      <p style="color:#aaa;max-width:640px">
+        Scans your entire library, finds video files missing a subtitle for your configured
+        preferred languages, and auto-downloads the best available match from all enabled sources.
+      </p>
+
+      <!-- ── Controls ──────────────────────────────────────────────────── -->
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px">
+        <button is="emby-button" type="button" class="raised" id="btnStartScan">
+          ▶ Start Scan
+        </button>
+        <span id="scanRunning" style="display:none;color:#2196F3">
+          ⟳ Scan in progress…
+        </span>
+        <button is="emby-button" type="button" class="raised button-alt" id="btnRefreshStatus">
+          Refresh status
+        </button>
+      </div>
+
+      <!-- ── Stats bar ─────────────────────────────────────────────────── -->
+      <div id="statsBar" style="display:none;display:flex;gap:24px;flex-wrap:wrap;margin-bottom:16px">
+        <div>
+          <div style="font-size:24px;font-weight:700;color:#4CAF50" id="statDownloaded">0</div>
+          <div style="font-size:11px;color:#aaa">Downloaded</div>
+        </div>
+        <div>
+          <div style="font-size:24px;font-weight:700;color:#aaa" id="statNotFound">0</div>
+          <div style="font-size:11px;color:#aaa">Not found</div>
+        </div>
+        <div>
+          <div style="font-size:24px;font-weight:700;color:#f44336" id="statFailed">0</div>
+          <div style="font-size:11px;color:#aaa">Failed</div>
+        </div>
+        <div>
+          <div style="font-size:24px;font-weight:700;color:#aaa" id="statSkipped">0</div>
+          <div style="font-size:11px;color:#aaa">Skipped</div>
+        </div>
+      </div>
+
+      <!-- ── Log table ─────────────────────────────────────────────────── -->
+      <div id="logSection" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <h3 class="sectionTitle" style="margin:0">Last scan log</h3>
+          <div style="display:flex;gap:8px">
+            <select is="emby-select" id="logFilter" class="emby-select-withcolor" style="font-size:12px">
+              <option value="">All</option>
+              <option value="Downloaded">Downloaded</option>
+              <option value="NotFound">Not found</option>
+              <option value="Failed">Failed</option>
+              <option value="Error">Error</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="border-radius:6px;overflow:hidden" id="logTable">
+          <div style="display:grid;grid-template-columns:1fr 60px 100px auto;gap:0;background:rgba(255,255,255,.06);padding:6px 12px;font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase">
+            <span>Item</span><span>Lang</span><span>Status</span><span>Path / Error</span>
+          </div>
+          <div id="logRows"></div>
+        </div>
+
+        <p id="emptyLog" style="display:none;color:#aaa;padding:16px 0;text-align:center">
+          No log entries yet.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>

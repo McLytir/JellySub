@@ -1,0 +1,82 @@
+<div id="JellySubSearchPage"
+     data-role="page"
+     class="page type-interior pluginConfigurationPage"
+     data-controller="__plugin/jellysubsearchjs">
+
+  <div data-role="content">
+    <div class="content-primary">
+
+      <!-- ── Header ─────────────────────────────────────────────────────── -->
+      <div class="sectionTitleContainer flex align-items-center" style="margin-bottom:16px">
+        <a is="emby-linkbutton" href="/web/configurationpage?name=jellysub"
+           style="margin-right:12px;font-size:20px">←</a>
+        <h2 class="sectionTitle" style="margin:0">🔍 Subtitle Search</h2>
+        <div id="modeToggle" style="margin-left:auto;display:flex;gap:6px">
+          <button is="emby-button" type="button" class="raised" id="btnAssisted">Assisted</button>
+          <button is="emby-button" type="button" class="raised button-alt" id="btnManual">Manual</button>
+        </div>
+      </div>
+
+      <!-- ── Assisted bar ───────────────────────────────────────────────── -->
+      <div id="assistedBar" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px">
+        <div class="inputContainer" style="flex:1;min-width:220px;margin:0">
+          <label class="inputLabel" for="itemIdInput">Jellyfin Item ID</label>
+          <input is="emby-input" type="text" id="itemIdInput"
+                 placeholder="Paste a Jellyfin item ID (UUID)" />
+        </div>
+        <div class="inputContainer" style="width:130px;margin:0">
+          <label class="inputLabel" for="assistedLang">Language(s)</label>
+          <input is="emby-input" type="text" id="assistedLang" placeholder="en,fr" />
+        </div>
+        <button is="emby-button" type="button" class="raised" id="btnAssistedSearch">Search</button>
+      </div>
+
+      <!-- ── Manual bar ────────────────────────────────────────────────── -->
+      <div id="manualBar" style="display:none;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px">
+        <div class="inputContainer" style="flex:2;min-width:220px;margin:0">
+          <label class="inputLabel" for="manualQuery">Title</label>
+          <input is="emby-input" type="text" id="manualQuery" placeholder="Movie or series name" />
+        </div>
+        <div class="inputContainer" style="width:60px;margin:0">
+          <label class="inputLabel" for="manualSeason">Season</label>
+          <input is="emby-input" type="number" id="manualSeason" placeholder="–" min="1" />
+        </div>
+        <div class="inputContainer" style="width:60px;margin:0">
+          <label class="inputLabel" for="manualEpisode">Episode</label>
+          <input is="emby-input" type="number" id="manualEpisode" placeholder="–" min="1" />
+        </div>
+        <div class="inputContainer" style="width:130px;margin:0">
+          <label class="inputLabel" for="manualLang">Language(s)</label>
+          <input is="emby-input" type="text" id="manualLang" placeholder="en,fr" />
+        </div>
+        <button is="emby-button" type="button" class="raised" id="btnManualSearch">Search</button>
+      </div>
+
+      <!-- ── Status / item info ─────────────────────────────────────────── -->
+      <div id="itemInfo" style="display:none;background:rgba(255,255,255,.05);border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:13px"></div>
+
+      <!-- ── Results table ──────────────────────────────────────────────── -->
+      <div id="resultsContainer" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span id="resultCount" style="color:#aaa;font-size:13px"></span>
+          <div style="display:flex;gap:8px">
+            <button is="emby-button" type="button" class="raised button-alt" id="btnSelectAll">Select all</button>
+            <button is="emby-button" type="button" class="raised" id="btnDownloadSelected"
+                    disabled>Download selected (<span id="selCount">0</span>)</button>
+          </div>
+        </div>
+
+        <div id="resultsList" style="border-radius:6px;overflow:hidden"></div>
+
+        <div id="downloadProgress" style="display:none;margin-top:12px">
+          <p style="margin:4px 0;font-size:13px;color:#aaa" id="dlStatus"></p>
+        </div>
+      </div>
+
+      <div id="noResults" style="display:none;color:#aaa;padding:24px 0;text-align:center">
+        No subtitles found. Try a different query or enable more sources.
+      </div>
+
+    </div>
+  </div>
+</div>

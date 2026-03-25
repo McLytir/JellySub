@@ -1,0 +1,12 @@
+[
+  {
+    "guid": "a8b56a08-4e33-4a8c-b3e1-24e3b8b1e6c1",
+    "name": "JellySub",
+    "description": "No-login subtitle downloader. Scrapes OpenSubtitles.org, Subscene and YifySubtitles. Supports assisted search, guided series batch download, and optional sync via ffsubsync / alass.",
+    "overview": "Download subtitles for your media without any account. Features assisted search, series batch download with per-uploader matching, library scan, and optional auto-sync.",
+    "owner": "McLytir",
+    "category": "Subtitles",
+    "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/assets/logo.png",
+    "versions": []
+  }
+]

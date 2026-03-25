@@ -1,0 +1,42 @@
+name: "🏗️ Build"
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md", "manifest.json", "assets/**"]
+  pull_request:
+    branches: [main]
+    paths-ignore: ["**.md", "manifest.json", "assets/**"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build & verify
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore JellySub.sln
+
+      - name: Build (Release)
+        run: |
+          dotnet build JellySub.sln \
+            --configuration Release \
+            --no-restore
+
+      - name: Publish plugin
+        run: |
+          dotnet publish \
+            Jellyfin.Plugin.JellySub/Jellyfin.Plugin.JellySub.csproj \
+            --configuration Release \
+            --no-build \
+            --output ./artifacts
+
+      - name: List artifacts
+        run: ls -lh artifacts/
