@@ -44,7 +44,8 @@ jobs:
             Jellyfin.Plugin.JellySub/Jellyfin.Plugin.JellySub.csproj \
             --configuration Release \
             --output ./artifacts \
-            /p:Version=${{ steps.ver.outputs.VER }}
+            /p:Version=${{ steps.ver.outputs.VER }} \
+            --verbosity detailed 2>&1 | tail -60
 
       # ── Package ────────────────────────────────────────────────────────
       - name: Create zip
