@@ -7,6 +7,15 @@
     "owner": "McLytir",
     "category": "Subtitles",
     "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/assets/logo.png",
-    "versions": []
+    "versions": [
+      {
+        "version": "1.0.0.0",
+        "changelog": "\n### Added\n- Initial release\n- Subtitle sources: OpenSubtitles.org, Subscene, YifySubtitles (no login required)\n- Configurable source priority and enable/disable per source\n- Assisted search — auto-search from Jellyfin item metadata, manual selection\n- Manual search — free-text query with season/episode filter\n- Series / folder batch download\n  - Auto mode — silent best-match per episode\n  - Guided mode — user picks ep 1 subtitle; plugin matches same uploader / release group for remaining episodes\n- Player test — VLC command + XSPF playlist download before committing a series batch\n- Manual re-sync trigger (ffsubsync or alass) after player test\n- Library scan — on-demand or scheduled, with filterable results log\n- Sync tool integration: install ffsubsync (pip) and alass (GitHub binary) from settings UI\n- Auto-sync after download option\n- Language mapping: 35 languages with BCP-47 ↔ ISO 639-2/B ↔ display name conversion\n- Full Jellyfin plugin repository support (`manifest.json`)",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/McLytir/JellySub/releases/download/v1.0.0/jellysub_1.0.0.0.zip",
+        "checksum": "e5c43561b6f4bae289ba699868091327",
+        "timestamp": "2026-03-25T05:41:50Z"
+      }
+    ]
   }
 ]
