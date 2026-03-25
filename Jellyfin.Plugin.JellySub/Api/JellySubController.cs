@@ -523,11 +523,11 @@ public sealed class JellySubController : ControllerBase
         return req;
     }
 
-    private List<Episode> GetEpisodes(MediaBrowser.Controller.Entities.BaseItem seriesItem)
+    private List<Episode> GetEpisodes(BaseItem seriesItem)
     {
         var query = new InternalItemsQuery
         {
-            IncludeItemTypes = new[] { MediaBrowser.Model.Entities.BaseItemKind.Episode },
+            IncludeItemTypes = new[] { BaseItemKind.Episode },
             IsVirtualItem    = false,
             Recursive        = true,
         };

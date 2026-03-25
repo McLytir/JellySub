@@ -10,6 +10,7 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -85,15 +86,11 @@ public sealed class LibraryScanTask : IScheduledTask
         }
 
         // Gather all movies + episodes
-        var items = _libraryManager.GetItemList(new MediaBrowser.Controller.Library.InternalItemsQuery
+        var items = _libraryManager.GetItemList(new InternalItemsQuery
         {
-            IncludeItemTypes = new[]
-            {
-                MediaBrowser.Model.Entities.BaseItemKind.Movie,
-                MediaBrowser.Model.Entities.BaseItemKind.Episode
-            },
-            IsVirtualItem = false,
-            Recursive     = true,
+            IncludeItemTypes = new[] { BaseItemKind.Movie, BaseItemKind.Episode },
+            IsVirtualItem    = false,
+            Recursive        = true,
         });
 
         var videos = items
@@ -175,7 +172,7 @@ public sealed class LibraryScanTask : IScheduledTask
         };
 
         // IMDb ID
-        var imdb = item.GetProviderId(MediaBrowser.Model.Entities.MetadataProvider.Imdb);
+        var imdb = item.GetProviderId(MetadataProvider.Imdb);
         if (!string.IsNullOrEmpty(imdb)) req.ImdbId = imdb;
 
         if (item is Episode ep)

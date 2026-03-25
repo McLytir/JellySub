@@ -1,7 +1,7 @@
 
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jellyfin.Plugin.JellySub", "Jellyfin.Plugin.JellySub\Jellyfin.Plugin.JellySub.csproj", "{A8B56A08-4E33-4A8C-B3E1-24E3B8B1E6C1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jellyfin.Plugin.JellySub", "Jellyfin.Plugin.JellySub/Jellyfin.Plugin.JellySub.csproj", "{A8B56A08-4E33-4A8C-B3E1-24E3B8B1E6C1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
