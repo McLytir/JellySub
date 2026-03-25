@@ -28,8 +28,33 @@ public sealed class LibraryScanTask : IScheduledTask
     private readonly ILogger<LibraryScanTask> _logger;
 
     // Simple in-memory log of the last scan — read by the API controller
-    public static readonly List<ScanLogEntry> LastScanLog = new();
+    private static readonly List<ScanLogEntry> _lastScanLog = new();
+    private static readonly object _logLock = new();
     public static bool IsRunning { get; private set; }
+
+    public static IReadOnlyList<ScanLogEntry> GetLastScanLog()
+    {
+        lock (_logLock)
+        {
+            return _lastScanLog.ToList().AsReadOnly();
+        }
+    }
+
+    private static void ClearLog()
+    {
+        lock (_logLock)
+        {
+            _lastScanLog.Clear();
+        }
+    }
+
+    private static void AddToLog(ScanLogEntry entry)
+    {
+        lock (_logLock)
+        {
+            _lastScanLog.Add(entry);
+        }
+    }
 
     public LibraryScanTask(
         ILibraryManager libraryManager,
@@ -60,7 +85,7 @@ public sealed class LibraryScanTask : IScheduledTask
         }
 
         IsRunning = true;
-        LastScanLog.Clear();
+        ClearLog();
 
         try
         {
@@ -146,18 +171,19 @@ public sealed class LibraryScanTask : IScheduledTask
                     _logger.LogWarning(ex, "Scan error for {Title} [{Lang}]", video.Name, lang);
                 }
 
-                LastScanLog.Add(entry);
+                AddToLog(entry);
             }
 
             done++;
             progress.Report((double)done / videos.Count * 100.0);
         }
 
+        var logSnapshot = GetLastScanLog();
         _logger.LogInformation(
             "Library scan complete: {Downloaded} downloaded, {NotFound} not found, {Errors} errors",
-            LastScanLog.Count(e => e.Status == "Downloaded"),
-            LastScanLog.Count(e => e.Status == "NotFound"),
-            LastScanLog.Count(e => e.Status is "Failed" or "Error"));
+            logSnapshot.Count(e => e.Status == "Downloaded"),
+            logSnapshot.Count(e => e.Status == "NotFound"),
+            logSnapshot.Count(e => e.Status is "Failed" or "Error"));
     }
 
     private static SubtitleSearchRequest BuildRequest(BaseItem item, string lang)

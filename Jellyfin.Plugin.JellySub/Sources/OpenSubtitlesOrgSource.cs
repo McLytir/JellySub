@@ -110,7 +110,8 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
             ? req.SeriesTitle ?? req.Title ?? string.Empty
             : req.Title ?? string.Empty;
 
-        var encoded = HttpUtility.UrlEncode(title.ToLowerInvariant()).Replace("+", "+");
+        // HttpUtility.UrlEncode uses '+' for spaces; replace with '%20' for URLs
+        var encoded = HttpUtility.UrlEncode(title.ToLowerInvariant()).Replace("+", "%20");
 
         var url = $"{SearchUrl}/sublanguageid-{threeLetter}/moviename-{encoded}";
 

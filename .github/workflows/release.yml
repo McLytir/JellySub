@@ -1,6 +1,7 @@
 name: "🚀 Release"
 
 # Triggered by pushing a version tag: git tag v1.0.0 && git push --tags
+# Before tagging, bump Version in Directory.Build.props and build.yaml.
 on:
   push:
     tags:
@@ -25,16 +26,15 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
-      # ── Derive version from tag (strip leading v) ───────────────────
+      # ── Derive version from tag (strip leading v, pad to 4 parts) ─────
       - name: Parse version
         id: ver
         run: |
-          TAG="${GITHUB_REF_NAME}"          # e.g.  v1.2.3
-          VER="${TAG#v}"                    # e.g.  1.2.3
-          # Jellyfin needs 4-part versions: 1.2.3 → 1.2.3.0
+          TAG="${GITHUB_REF_NAME}"
+          VER="${TAG#v}"
           [[ "$VER" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && VER="${VER}.0"
-          echo "TAG=$TAG"   >> $GITHUB_OUTPUT
-          echo "VER=$VER"   >> $GITHUB_OUTPUT
+          echo "TAG=$TAG"               >> $GITHUB_OUTPUT
+          echo "VER=$VER"               >> $GITHUB_OUTPUT
           echo "ZIP=jellysub_${VER}.zip" >> $GITHUB_OUTPUT
 
       # ── Build ──────────────────────────────────────────────────────────
@@ -42,11 +42,7 @@ jobs:
         run: dotnet restore JellySub.sln
 
       - name: Build
-        run: |
-          dotnet build JellySub.sln \
-            --configuration Release \
-            --no-restore \
-            /p:Version=${{ steps.ver.outputs.VER }}
+        run: dotnet build JellySub.sln --configuration Release --no-restore
 
       - name: Publish plugin
         run: |
@@ -66,7 +62,7 @@ jobs:
           zip -j "../${{ steps.ver.outputs.ZIP }}" \
             Jellyfin.Plugin.JellySub.dll \
             HtmlAgilityPack.dll
-          echo "Zip: $(ls -lh ../${{ steps.ver.outputs.ZIP }})"
+          ls -lh "../${{ steps.ver.outputs.ZIP }}"
 
       # ── Checksum ───────────────────────────────────────────────────────
       - name: Compute MD5
@@ -80,7 +76,6 @@ jobs:
       - name: Extract changelog
         id: changelog
         run: |
-          # Read CHANGELOG.md section for this tag, or fall back to a default
           if [ -f CHANGELOG.md ]; then
             SECTION=$(awk "/^## \[${{ steps.ver.outputs.TAG }}\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md)
             if [ -z "$SECTION" ]; then
@@ -89,7 +84,6 @@ jobs:
           else
             SECTION="See release notes."
           fi
-          # Write to file (avoids shell quoting issues)
           printf '%s' "$SECTION" > /tmp/changelog_section.txt
           echo "FILE=/tmp/changelog_section.txt" >> $GITHUB_OUTPUT
 

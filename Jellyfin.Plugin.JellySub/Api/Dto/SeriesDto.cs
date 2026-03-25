@@ -44,6 +44,7 @@ public sealed class SeriesBatchDownloadRequestDto
 public sealed class EpisodeBatchItem
 {
     public string ItemId      { get; set; } = string.Empty;
+    public string? Label      { get; set; }
     public string MediaPath   { get; set; } = string.Empty;
     public string SourceId    { get; set; } = string.Empty;
     public string SubtitleId  { get; set; } = string.Empty;

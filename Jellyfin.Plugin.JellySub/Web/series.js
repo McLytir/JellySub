@@ -269,7 +269,7 @@ async function confirmDownload(view) {
                 payload = makeDownloadPayload(ep.ItemId, best, lang);
             } else {
                 const sub = ep.ChosenSubtitle;
-                payload = makeDownloadPayload(ep.ItemId, sub, lang, ep.MediaPath);
+                payload = makeDownloadPayload(ep.ItemId, sub, lang, ep.MediaPath, ep.Label);
             }
 
             const res = await ApiClient.ajax({
@@ -326,9 +326,10 @@ function updateEpisodeListWithMatches(view, data) {
     });
 }
 
-function makeDownloadPayload(itemId, sub, language, mediaPath) {
+function makeDownloadPayload(itemId, sub, language, mediaPath, label) {
     return {
         ItemId:       itemId,
+        Label:        label,
         SourceId:     sub.SourceId,
         SubtitleId:   sub.Id,
         DownloadUrl:  sub.DownloadUrl,
@@ -336,6 +337,7 @@ function makeDownloadPayload(itemId, sub, language, mediaPath) {
         ReleaseName:  sub.ReleaseName,
         Uploader:     sub.Uploader     || '',
         ReleaseGroup: sub.ReleaseGroup || '',
+        MediaPath:    mediaPath,
     };
 }
 

@@ -232,9 +232,38 @@ public sealed class SubsceneSource : ISubtitleSource
     {
         // Subscene language labels are full English names (e.g. "English", "Farsi/Persian")
         var clean = label.Split('/')[0].Trim().ToLowerInvariant();
-        return LanguageMap.ToTwoLetter(LanguageMap.ToThreeLetter(clean)) is { } two && two != clean
-            ? two
-            : clean.Length >= 2 ? clean[..2] : clean;
+
+        // Direct mapping from common English language names to BCP-47 codes
+        var nameToCode = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["english"]   = "en", ["french"]    = "fr", ["german"]    = "de",
+            ["spanish"]   = "es", ["italian"]   = "it", ["portuguese"] = "pt",
+            ["russian"]   = "ru", ["japanese"]  = "ja", ["korean"]    = "ko",
+            ["chinese"]   = "zh", ["arabic"]    = "ar", ["dutch"]     = "nl",
+            ["polish"]    = "pl", ["swedish"]   = "sv", ["norwegian"]  = "no",
+            ["danish"]    = "da", ["finnish"]   = "fi", ["czech"]     = "cs",
+            ["slovak"]    = "sk", ["hungarian"] = "hu", ["romanian"]   = "ro",
+            ["turkish"]   = "tr", ["greek"]     = "el", ["hebrew"]    = "he",
+            ["ukrainian"] = "uk", ["bulgarian"] = "bg", ["croatian"]   = "hr",
+            ["serbian"]   = "sr", ["catalan"]   = "ca", ["vietnamese"] = "vi",
+            ["thai"]      = "th", ["indonesian"] = "id", ["malay"]     = "ms",
+            ["persian"]   = "fa", ["farsi"]     = "fa", ["hindi"]     = "hi",
+        };
+
+        if (nameToCode.TryGetValue(clean, out var code))
+        {
+            return code;
+        }
+
+        // Fallback: try the existing LanguageMap chain (in case label is already a code)
+        var viaMap = LanguageMap.ToTwoLetter(LanguageMap.ToThreeLetter(clean));
+        if (viaMap != clean)
+        {
+            return viaMap;
+        }
+
+        // Last resort: first two characters
+        return clean.Length >= 2 ? clean[..2] : clean;
     }
 
     private static string ExtractReleaseGroup(string name)

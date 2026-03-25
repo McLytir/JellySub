@@ -306,6 +306,7 @@ public sealed class JellySubController : ControllerBase
             results.Add(new BatchItemResultDto
             {
                 ItemId    = item.ItemId,
+                Label     = item.Label ?? string.Empty,
                 Success   = download.Success,
                 SavedPath = download.SavedPath,
                 Error     = download.Error,
@@ -466,7 +467,7 @@ public sealed class JellySubController : ControllerBase
         return Ok(new ScanStatusDto
         {
             IsRunning = LibraryScanTask.IsRunning,
-            Log       = LibraryScanTask.LastScanLog.Select(ScanLogEntryDto.From).ToList(),
+            Log       = LibraryScanTask.GetLastScanLog().Select(ScanLogEntryDto.From).ToList(),
         });
     }
 

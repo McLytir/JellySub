@@ -13,6 +13,7 @@ public sealed class ScanStatusDto
 public sealed class ScanLogEntryDto
 {
     public string    ItemTitle  { get; set; } = string.Empty;
+    public string    MediaPath  { get; set; } = string.Empty;
     public string    Language   { get; set; } = string.Empty;
     public string    Status     { get; set; } = string.Empty;
     public string    SavedPath  { get; set; } = string.Empty;
@@ -22,6 +23,7 @@ public sealed class ScanLogEntryDto
     public static ScanLogEntryDto From(ScanLogEntry e) => new()
     {
         ItemTitle = e.ItemTitle,
+        MediaPath = e.MediaPath,
         Language  = e.Language,
         Status    = e.Status,
         SavedPath = e.SavedPath,
