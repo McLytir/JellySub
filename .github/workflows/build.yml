@@ -28,7 +28,8 @@ jobs:
         run: |
           dotnet build JellySub.sln \
             --configuration Release \
-            --no-restore
+            --no-restore \
+            --verbosity detailed 2>&1 | tail -80
 
       - name: Publish plugin
         run: |
