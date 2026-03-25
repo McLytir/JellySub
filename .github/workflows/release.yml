@@ -38,17 +38,17 @@ jobs:
           echo "ZIP=jellysub_${VER}.zip" >> $GITHUB_OUTPUT
 
       # ── Build ──────────────────────────────────────────────────────────
+      - name: Restore
+        run: dotnet restore JellySub.sln
+
       - name: Publish plugin
-        shell: bash
         run: |
-          set -euo pipefail
-          echo "VER=${{ steps.ver.outputs.VER }}"
           dotnet publish \
             Jellyfin.Plugin.JellySub/Jellyfin.Plugin.JellySub.csproj \
             --configuration Release \
+            --no-restore \
             --output ./artifacts \
-            /p:Version=${{ steps.ver.outputs.VER }} \
-            --verbosity normal
+            /p:Version=${{ steps.ver.outputs.VER }}
 
       - name: List artifacts
         run: ls -lh ./artifacts/
