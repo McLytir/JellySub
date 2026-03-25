@@ -8,6 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- ASP.NET Core — required for [ApiController], IActionResult, [Authorize] etc.
+         frameworkReferences are NOT transitively propagated by NuGet, so we must
+         declare this explicitly even though Jellyfin.Common carries it internally. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Jellyfin APIs — referenced but NOT shipped (already present in the host process).
          Pinned to 10.10.7 (latest stable 10.10 release, matching targetAbi in build.yaml).
          Bump when upgrading the target Jellyfin version. -->
