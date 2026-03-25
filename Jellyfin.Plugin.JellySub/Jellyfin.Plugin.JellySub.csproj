@@ -8,9 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Jellyfin APIs (referenced but not shipped — already present in the host) -->
-    <PackageReference Include="Jellyfin.Common"     Version="10.*-*" PrivateAssets="All" />
-    <PackageReference Include="Jellyfin.Controller" Version="10.*-*" PrivateAssets="All" />
+    <!-- Jellyfin APIs — referenced but NOT shipped (already present in the host process).
+         Pinned to 10.10.7 (latest stable 10.10 release, matching targetAbi in build.yaml).
+         Bump when upgrading the target Jellyfin version. -->
+    <PackageReference Include="Jellyfin.Common"     Version="10.10.7" PrivateAssets="All" />
+    <PackageReference Include="Jellyfin.Controller" Version="10.10.7" PrivateAssets="All" />
 
     <!-- HTML scraping -->
     <PackageReference Include="HtmlAgilityPack" Version="1.11.62" />
@@ -19,12 +21,12 @@
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
   </ItemGroup>
 
-  <!-- Embed all web pages as resources -->
+  <!-- Embed all web pages as resources (forward-slash glob — works on all OSes) -->
   <ItemGroup>
-    <EmbeddedResource Include="Web\*.html" />
-    <EmbeddedResource Include="Web\*.js"   />
-    <None            Remove="Web\*.html"   />
-    <None            Remove="Web\*.js"     />
+    <EmbeddedResource Include="Web/*.html" />
+    <EmbeddedResource Include="Web/*.js"   />
+    <None            Remove="Web/*.html"   />
+    <None            Remove="Web/*.js"     />
   </ItemGroup>
 
 </Project>
