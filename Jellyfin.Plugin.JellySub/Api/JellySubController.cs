@@ -14,6 +14,7 @@ using Jellyfin.Plugin.JellySub.Tasks;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
+using Jellyfin.Data.Enums;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -510,7 +511,7 @@ public sealed class JellySubController : ControllerBase
         };
 
         // IMDb
-        var imdb = item.GetProviderId(MetadataProvider.Imdb);
+        var imdb = item.GetProviderId(MediaBrowser.Model.Entities.MetadataProvider.Imdb);
         if (!string.IsNullOrEmpty(imdb)) req.ImdbId = imdb;
 
         if (item is Episode ep)

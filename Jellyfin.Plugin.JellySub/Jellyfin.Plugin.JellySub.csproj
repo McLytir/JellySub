@@ -20,6 +20,7 @@
          Bump when upgrading the target Jellyfin version. -->
     <PackageReference Include="Jellyfin.Common"     Version="10.10.7" PrivateAssets="All" />
     <PackageReference Include="Jellyfin.Controller" Version="10.10.7" PrivateAssets="All" />
+    <PackageReference Include="Jellyfin.Data"       Version="10.10.7" PrivateAssets="All" />
 
     <!-- HTML scraping -->
     <PackageReference Include="HtmlAgilityPack" Version="1.11.62" />
