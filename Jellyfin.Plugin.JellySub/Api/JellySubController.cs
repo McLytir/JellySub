@@ -505,22 +505,31 @@ public sealed class JellySubController : ControllerBase
 
     [HttpGet("webclient/script")]
     [Authorize(Policy = "RequiresElevation")]
-    public IActionResult DownloadWebClientScript([FromQuery] string platform)
+    public IActionResult DownloadWebClientScript([FromQuery] string platform, [FromQuery] string? mode)
     {
         var normalized = (platform ?? string.Empty).Trim().ToLowerInvariant();
-        var content = normalized switch
+        var normalizedMode = string.IsNullOrWhiteSpace(mode) ? "install" : mode.Trim().ToLowerInvariant();
+        var uninstall = normalizedMode == "uninstall" || normalizedMode == "remove" || normalizedMode == "revert";
+
+        var content = (normalized, uninstall) switch
         {
-            "linux" => BuildLinuxInstallerScript(),
-            "mac" or "macos" or "osx" => BuildMacInstallerScript(),
-            "win" or "windows" => BuildWindowsInstallerScript(),
+            ("linux", false) => BuildLinuxInstallerScript(),
+            ("linux", true) => BuildLinuxUninstallScript(),
+            ("mac", false) or ("macos", false) or ("osx", false) => BuildMacInstallerScript(),
+            ("mac", true) or ("macos", true) or ("osx", true) => BuildMacUninstallScript(),
+            ("win", false) or ("windows", false) => BuildWindowsInstallerScript(),
+            ("win", true) or ("windows", true) => BuildWindowsUninstallScript(),
             _ => throw new ArgumentException("Unknown platform. Use linux, macos, or windows."),
         };
 
-        var fileName = normalized switch
+        var fileName = (normalized, uninstall) switch
         {
-            "linux" => "install-jellysub-web-client-linux.sh",
-            "mac" or "macos" or "osx" => "install-jellysub-web-client-macos.sh",
-            _ => "install-jellysub-web-client-windows.ps1",
+            ("linux", false) => "install-jellysub-web-client-linux.sh",
+            ("linux", true) => "uninstall-jellysub-web-client-linux.sh",
+            ("mac", false) or ("macos", false) or ("osx", false) => "install-jellysub-web-client-macos.sh",
+            ("mac", true) or ("macos", true) or ("osx", true) => "uninstall-jellysub-web-client-macos.sh",
+            (_, false) => "install-jellysub-web-client-windows.ps1",
+            _ => "uninstall-jellysub-web-client-windows.ps1",
         };
 
         return File(Encoding.UTF8.GetBytes(content), "application/octet-stream", fileName);
@@ -531,38 +540,7 @@ public sealed class JellySubController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult InstallWebClientDefaults()
     {
-        var results = new List<WebClientInstallResult>();
-        var pluginScript = GetEmbeddedText("WebClient.jellysub-context-plugin.js");
-
-        foreach (var root in GetDefaultWebRoots())
-        {
-            try
-            {
-                if (!Directory.Exists(root))
-                {
-                    results.Add(new WebClientInstallResult { Path = root, Status = "Skipped", Message = "Path not found" });
-                    continue;
-                }
-
-                var indexPath = Path.Combine(root, "index.html");
-                var configPath = Path.Combine(root, "config.json");
-                if (!System.IO.File.Exists(indexPath) || !System.IO.File.Exists(configPath))
-                {
-                    results.Add(new WebClientInstallResult { Path = root, Status = "Skipped", Message = "Missing index.html or config.json" });
-                    continue;
-                }
-
-                System.IO.File.WriteAllText(Path.Combine(root, "jellysub-context-plugin.js"), pluginScript);
-                PatchIndexHtml(indexPath);
-                PatchConfigJson(configPath);
-                results.Add(new WebClientInstallResult { Path = root, Status = "Patched", Message = "Installed JellySub web-client plugin" });
-            }
-            catch (Exception ex)
-            {
-                results.Add(new WebClientInstallResult { Path = root, Status = "Failed", Message = ex.Message });
-            }
-        }
-
+        var results = PatchDefaultWebRoots(install: true);
         var patchedCount = results.Count(r => r.Status == "Patched");
         return Ok(new
         {
@@ -570,6 +548,23 @@ public sealed class JellySubController : ControllerBase
             Message = patchedCount > 0
                 ? $"Patched {patchedCount} default Jellyfin web root(s). Restart Jellyfin / Jellyfin Desktop and clear cache."
                 : "No default Jellyfin web root could be patched automatically. Download the platform script and run it manually on the machine hosting the Jellyfin web files.",
+            Results = results,
+        });
+    }
+
+    [HttpPost("webclient/uninstall-defaults")]
+    [Authorize(Policy = "RequiresElevation")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult UninstallWebClientDefaults()
+    {
+        var results = PatchDefaultWebRoots(install: false);
+        var revertedCount = results.Count(r => r.Status == "Reverted");
+        return Ok(new
+        {
+            Success = revertedCount > 0,
+            Message = revertedCount > 0
+                ? $"Reverted {revertedCount} default Jellyfin web root(s). Restart Jellyfin / Jellyfin Desktop and clear cache."
+                : "No default Jellyfin web root could be reverted automatically. Download the platform uninstall script and run it manually on the machine hosting the Jellyfin web files.",
             Results = results,
         });
     }
@@ -723,6 +718,51 @@ public sealed class JellySubController : ControllerBase
             && configText.Contains("jellysubContext", StringComparison.OrdinalIgnoreCase);
     }
 
+    private List<WebClientInstallResult> PatchDefaultWebRoots(bool install)
+    {
+        var results = new List<WebClientInstallResult>();
+        var pluginScript = install ? GetEmbeddedText("WebClient.jellysub-context-plugin.js") : null;
+
+        foreach (var root in GetDefaultWebRoots())
+        {
+            try
+            {
+                if (!Directory.Exists(root))
+                {
+                    results.Add(new WebClientInstallResult { Path = root, Status = "Skipped", Message = "Path not found" });
+                    continue;
+                }
+
+                var indexPath = Path.Combine(root, "index.html");
+                var configPath = Path.Combine(root, "config.json");
+                if (!System.IO.File.Exists(indexPath) || !System.IO.File.Exists(configPath))
+                {
+                    results.Add(new WebClientInstallResult { Path = root, Status = "Skipped", Message = "Missing index.html or config.json" });
+                    continue;
+                }
+
+                if (install)
+                {
+                    System.IO.File.WriteAllText(Path.Combine(root, "jellysub-context-plugin.js"), pluginScript!);
+                    PatchIndexHtml(indexPath);
+                    PatchConfigJson(configPath);
+                    results.Add(new WebClientInstallResult { Path = root, Status = "Patched", Message = "Installed JellySub web-client plugin" });
+                }
+                else
+                {
+                    RemoveWebClientPatch(root, indexPath, configPath);
+                    results.Add(new WebClientInstallResult { Path = root, Status = "Reverted", Message = "Removed JellySub web-client plugin" });
+                }
+            }
+            catch (Exception ex)
+            {
+                results.Add(new WebClientInstallResult { Path = root, Status = "Failed", Message = ex.Message });
+            }
+        }
+
+        return results;
+    }
+
     private string GetEmbeddedText(string suffix)
     {
         var asm = typeof(Plugin).Assembly;
@@ -771,6 +811,35 @@ public sealed class JellySubController : ControllerBase
         }
 
         System.IO.File.WriteAllText(configPath, json.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    private static void RemoveWebClientPatch(string root, string indexPath, string configPath)
+    {
+        var pluginPath = Path.Combine(root, "jellysub-context-plugin.js");
+        if (System.IO.File.Exists(pluginPath))
+        {
+            System.IO.File.Delete(pluginPath);
+        }
+
+        var indexText = System.IO.File.ReadAllText(indexPath)
+            .Replace("    <script src=\"jellysub-context-plugin.js\"></script>\r\n", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("    <script src=\"jellysub-context-plugin.js\"></script>\n", string.Empty, StringComparison.OrdinalIgnoreCase);
+        System.IO.File.WriteAllText(indexPath, indexText);
+
+        var json = JsonNode.Parse(System.IO.File.ReadAllText(configPath))?.AsObject();
+        var plugins = json?["plugins"] as JsonArray;
+        if (plugins is not null)
+        {
+            for (var i = plugins.Count - 1; i >= 0; i--)
+            {
+                if (string.Equals(plugins[i]?.GetValue<string>(), "jellysubContext", StringComparison.OrdinalIgnoreCase))
+                {
+                    plugins.RemoveAt(i);
+                }
+            }
+
+            System.IO.File.WriteAllText(configPath, json!.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        }
     }
 
     private static string BuildLinuxInstallerScript() => "#!/usr/bin/env bash\n" +
@@ -876,6 +945,30 @@ public sealed class JellySubController : ControllerBase
         "$patched = $false\r\nforeach ($root in $candidates) { if (Patch-Root $root) { $patched = $true } }\r\n" +
         "if (-not $patched) { Write-Host 'No default Jellyfin web root found. Edit $candidates in this script for a custom install.'; exit 1 }\r\n" +
         "Write-Host 'Done. Restart Jellyfin / Jellyfin Desktop and clear browser cache.'\r\n";
+
+    private static string BuildLinuxUninstallScript() => "#!/usr/bin/env bash\n" +
+        "set -euo pipefail\n\n" +
+        "CANDIDATES=(\n  \"/usr/share/jellyfin/web\"\n  \"/var/lib/jellyfin/web\"\n  \"/opt/jellyfin-web\"\n)\n\n" +
+        "revert_root() {\n  local root=\"$1\"\n  local plugin=\"$root/jellysub-context-plugin.js\"\n  local index=\"$root/index.html\"\n  local config=\"$root/config.json\"\n  [[ -f \"$index\" && -f \"$config\" ]] || return 1\n  rm -f \"$plugin\"\n  python3 - <<PY\nfrom pathlib import Path\np = Path(r'''$index''')\ntext = p.read_text(encoding='utf-8').replace('    <script src=\\\"jellysub-context-plugin.js\\\"></script>\\n', '').replace('    <script src=\\\"jellysub-context-plugin.js\\\"></script>\\r\\n', '')\np.write_text(text, encoding='utf-8')\nPY\n  python3 - <<PY\nimport json\nfrom pathlib import Path\np = Path(r'''$config''')\ndata = json.loads(p.read_text(encoding='utf-8'))\nplugins = data.get('plugins', [])\nif isinstance(plugins, list): data['plugins'] = [p for p in plugins if p != 'jellysubContext']\np.write_text(json.dumps(data, indent=2) + '\\n', encoding='utf-8')\nPY\n  echo \"Reverted: $root\"\n}\n\n" +
+        "found=0\nfor root in \"${CANDIDATES[@]}\"; do\n  if revert_root \"$root\"; then found=1; fi\ndone\nif [[ \"$found\" -eq 0 ]]; then echo \"No default Jellyfin web root found. Edit CANDIDATES in this script for a custom install.\"; exit 1; fi\necho \"Done. Restart Jellyfin / clear browser cache.\"\n";
+
+    private static string BuildMacUninstallScript() => "#!/usr/bin/env bash\n" +
+        "set -euo pipefail\n\n" +
+        "CANDIDATES=(\n  \"/Applications/Jellyfin.app/Contents/Resources/jellyfin-web\"\n  \"/Applications/Jellyfin Desktop.app/Contents/Resources/jellyfin-web\"\n  \"$HOME/Applications/Jellyfin.app/Contents/Resources/jellyfin-web\"\n  \"$HOME/Applications/Jellyfin Desktop.app/Contents/Resources/jellyfin-web\"\n)\n\n" +
+        "revert_root() {\n  local root=\"$1\"\n  local plugin=\"$root/jellysub-context-plugin.js\"\n  local index=\"$root/index.html\"\n  local config=\"$root/config.json\"\n  [[ -f \"$index\" && -f \"$config\" ]] || return 1\n  rm -f \"$plugin\"\n  python3 - <<PY\nfrom pathlib import Path\np = Path(r'''$index''')\ntext = p.read_text(encoding='utf-8').replace('    <script src=\\\"jellysub-context-plugin.js\\\"></script>\\n', '').replace('    <script src=\\\"jellysub-context-plugin.js\\\"></script>\\r\\n', '')\np.write_text(text, encoding='utf-8')\nPY\n  python3 - <<PY\nimport json\nfrom pathlib import Path\np = Path(r'''$config''')\ndata = json.loads(p.read_text(encoding='utf-8'))\nplugins = data.get('plugins', [])\nif isinstance(plugins, list): data['plugins'] = [p for p in plugins if p != 'jellysubContext']\np.write_text(json.dumps(data, indent=2) + '\\n', encoding='utf-8')\nPY\n  echo \"Reverted: $root\"\n}\n\n" +
+        "found=0\nfor root in \"${CANDIDATES[@]}\"; do\n  if revert_root \"$root\"; then found=1; fi\ndone\nif [[ \"$found\" -eq 0 ]]; then echo \"No default Jellyfin web root found. Edit CANDIDATES in this script for a custom install.\"; exit 1; fi\necho \"Done. Restart Jellyfin / Jellyfin Desktop and clear browser cache.\"\n";
+
+    private static string BuildWindowsUninstallScript() =>
+        "$ErrorActionPreference = 'Stop'\r\n\r\n" +
+        "$candidates = @(\r\n" +
+        "  'C:\\Program Files\\Jellyfin\\Server\\jellyfin-web',\r\n" +
+        "  'C:\\Program Files\\Jellyfin\\jellyfin-web',\r\n" +
+        "  \"$env:LOCALAPPDATA\\Programs\\Jellyfin\\resources\\jellyfin-web\",\r\n" +
+        "  \"$env:LOCALAPPDATA\\Programs\\Jellyfin Desktop\\resources\\jellyfin-web\"\r\n" +
+        ")\r\n\r\n" +
+        "function Revert-Root([string]$root) {\r\n" +
+        "  $index = Join-Path $root 'index.html'\r\n  $config = Join-Path $root 'config.json'\r\n  $plugin = Join-Path $root 'jellysub-context-plugin.js'\r\n  if (!(Test-Path $index) -or !(Test-Path $config)) { return $false }\r\n  if (Test-Path $plugin) { Remove-Item $plugin -Force }\r\n  $indexText = Get-Content $index -Raw\r\n  $indexText = $indexText.Replace(\"    <script src=`\"jellysub-context-plugin.js`\"></script>`r`n\", '')\r\n  $indexText = $indexText.Replace(\"    <script src=`\"jellysub-context-plugin.js`\"></script>`n\", '')\r\n  Set-Content -Path $index -Value $indexText -Encoding UTF8\r\n  $json = Get-Content $config -Raw | ConvertFrom-Json\r\n  if ($null -ne $json.plugins) { $json.plugins = @($json.plugins | Where-Object { $_ -ne 'jellysubContext' }); $json | ConvertTo-Json -Depth 16 | Set-Content -Path $config -Encoding UTF8 }\r\n  Write-Host \"Reverted: $root\"\r\n  return $true\r\n}\r\n\r\n" +
+        "$reverted = $false\r\nforeach ($root in $candidates) { if (Revert-Root $root) { $reverted = $true } }\r\nif (-not $reverted) { Write-Host 'No default Jellyfin web root found. Edit $candidates in this script for a custom install.'; exit 1 }\r\nWrite-Host 'Done. Restart Jellyfin / Jellyfin Desktop and clear browser cache.'\r\n";
 
     private string SourceName(string sourceId)
         => _sources.FirstOrDefault(s => s.Id == sourceId)?.DisplayName ?? sourceId;

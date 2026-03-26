@@ -17,6 +17,8 @@ When installed into a Jellyfin web client, it adds:
 
 - Web-client plugin source: `web-client/jellysub-context-plugin.js`
 - Installer helper: `scripts/install_web_context_plugin.py`
+- Platform install scripts: `scripts/web-client/install-jellysub-web-client-*`
+- Platform uninstall scripts: `scripts/web-client/uninstall-jellysub-web-client-*`
 
 ## How it works
 
@@ -54,6 +56,10 @@ Often one of:
 
 Patch the desktop app's bundled web root as well if it does **not** use the server-hosted web UI.
 The exact location depends on platform/package.
+
+## Uninstall / revert
+
+Use the matching uninstall script for your platform, or the uninstall button from JellySub settings when the server can access the target web root.
 
 ## Caveats
 

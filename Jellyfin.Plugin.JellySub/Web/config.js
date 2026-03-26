@@ -15,9 +15,13 @@ export default function (view) {
     view.querySelector('#navScan').addEventListener('click', () => navigateTo('configurationpage?name=jellysubscan'));
 
     view.querySelector('#btnWebClientInstall').addEventListener('click', () => installWebClient(view));
-    view.querySelector('#btnDownloadLinux').addEventListener('click', () => downloadScript('linux'));
-    view.querySelector('#btnDownloadMac').addEventListener('click', () => downloadScript('macos'));
-    view.querySelector('#btnDownloadWindows').addEventListener('click', () => downloadScript('windows'));
+    view.querySelector('#btnWebClientUninstall').addEventListener('click', () => uninstallWebClient(view));
+    view.querySelector('#btnDownloadLinux').addEventListener('click', () => downloadScript('linux', 'install'));
+    view.querySelector('#btnDownloadMac').addEventListener('click', () => downloadScript('macos', 'install'));
+    view.querySelector('#btnDownloadWindows').addEventListener('click', () => downloadScript('windows', 'install'));
+    view.querySelector('#btnDownloadLinuxUninstall').addEventListener('click', () => downloadScript('linux', 'uninstall'));
+    view.querySelector('#btnDownloadMacUninstall').addEventListener('click', () => downloadScript('macos', 'uninstall'));
+    view.querySelector('#btnDownloadWindowsUninstall').addEventListener('click', () => downloadScript('windows', 'uninstall'));
 
     // ── Load ──────────────────────────────────────────────────────────────
     view.addEventListener('viewshow', async () => {
@@ -183,8 +187,8 @@ function navigateTo(url) {
     window.location.href = '/' + url;
 }
 
-function downloadScript(platform) {
-    window.open(ApiClient.getUrl(`${API}/webclient/script`, { platform }), '_blank');
+function downloadScript(platform, mode) {
+    window.open(ApiClient.getUrl(`${API}/webclient/script`, { platform, mode }), '_blank');
 }
 
 async function loadWebClientStatus(view) {
@@ -206,19 +210,26 @@ async function loadWebClientStatus(view) {
 }
 
 async function installWebClient(view) {
-    const el = view.querySelector('#webClientStatus');
+    await runWebClientAction(view, 'install-defaults', 'install');
+}
+
+async function uninstallWebClient(view) {
+    await runWebClientAction(view, 'uninstall-defaults', 'uninstall');
+}
+
+async function runWebClientAction(view, endpoint, label) {
     Dashboard.showLoadingMsg();
     try {
         const res = await ApiClient.ajax({
             type: 'POST',
-            url: ApiClient.getUrl(`${API}/webclient/install-defaults`),
+            url: ApiClient.getUrl(`${API}/webclient/${endpoint}`),
         });
         const ok = res.Success ? '✓' : '✗';
         const details = (res.Results || []).map(r => `${r.Path}: ${r.Status}${r.Message ? ' — ' + r.Message : ''}`).join('\n');
         Dashboard.alert(`${ok} ${res.Message}${details ? `\n\n${details}` : ''}`);
         await loadWebClientStatus(view);
     } catch (e) {
-        Dashboard.alert('Web-client install failed: ' + e);
+        Dashboard.alert(`Web-client ${label} failed: ` + e);
     } finally {
         Dashboard.hideLoadingMsg();
     }

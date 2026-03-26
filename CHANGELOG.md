@@ -5,6 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.5] – 2026-03-26
+
+### Added
+- Added Linux, macOS, and Windows uninstall/revert scripts for the JellySub web-client patch.
+- Added JellySub settings actions for downloading uninstall scripts and attempting automatic uninstall on default server paths.
+
 ## [v1.0.4] – 2026-03-26
 
 ### Added
