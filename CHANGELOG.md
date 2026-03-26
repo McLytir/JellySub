@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.1] – 2026-03-26
+
+### Fixed
+- Fixed Jellyfin page routing for JellySub pages so subtitle actions no longer land on the wrong page.
+- Fixed guided batch matching to use the actually selected anchor item instead of assuming the first list item.
+- Fixed series / folder batch analysis to work with folder-style selections and non-episode media items.
+- Added main Jellyfin UI action buttons for subtitle search, batch subtitle actions, and library-level scan access.
+
 ## [v1.0.0] – 2025-03-25
 
 ### Added
