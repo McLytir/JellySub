@@ -5,6 +5,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.2] – 2026-03-26
+
+### Fixed
+- Fixed Jellyfin plugin page links to use the client route format expected by the web app (`configurationpage?name=...`).
+- Exposed JellySub search, batch, and scan pages directly in Jellyfin's plugin menu.
+- Removed the incomplete client-side main-page injection attempt that was not actually loaded by Jellyfin.
+
 ## [v1.0.1] – 2026-03-26
 
 ### Fixed

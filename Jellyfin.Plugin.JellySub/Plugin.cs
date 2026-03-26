@@ -41,23 +41,20 @@ public sealed class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         return new[]
         {
             // Settings / entry-point page
-            new PluginPageInfo { Name = "jellysub",         EmbeddedResourcePath = $"{ns}.Web.config.html" },
+            new PluginPageInfo { Name = "jellysub",         DisplayName = "JellySub", EmbeddedResourcePath = $"{ns}.Web.config.html" },
             new PluginPageInfo { Name = "jellysubjs",       EmbeddedResourcePath = $"{ns}.Web.config.js"   },
 
             // Subtitle search (manual + assisted)
-            new PluginPageInfo { Name = "jellysubsearch",   EmbeddedResourcePath = $"{ns}.Web.search.html" },
+            new PluginPageInfo { Name = "jellysubsearch",   DisplayName = "Subtitle Search", EnableInMainMenu = true, MenuSection = "plugins", MenuIcon = "subtitles", EmbeddedResourcePath = $"{ns}.Web.search.html" },
             new PluginPageInfo { Name = "jellysubsearchjs", EmbeddedResourcePath = $"{ns}.Web.search.js"   },
 
             // Series / folder batch download
-            new PluginPageInfo { Name = "jellysubseries",   EmbeddedResourcePath = $"{ns}.Web.series.html" },
+            new PluginPageInfo { Name = "jellysubseries",   DisplayName = "Batch Subtitles", EnableInMainMenu = true, MenuSection = "plugins", MenuIcon = "folder", EmbeddedResourcePath = $"{ns}.Web.series.html" },
             new PluginPageInfo { Name = "jellysubseriesjs", EmbeddedResourcePath = $"{ns}.Web.series.js"   },
 
             // Library scan
-            new PluginPageInfo { Name = "jellysubscan",     EmbeddedResourcePath = $"{ns}.Web.scan.html"   },
+            new PluginPageInfo { Name = "jellysubscan",     DisplayName = "Subtitle Scan", EnableInMainMenu = true, MenuSection = "plugins", MenuIcon = "search", EmbeddedResourcePath = $"{ns}.Web.scan.html"   },
             new PluginPageInfo { Name = "jellysubscanjs",   EmbeddedResourcePath = $"{ns}.Web.scan.js"     },
-
-            // Main-web client integration (item/library action buttons)
-            new PluginPageInfo { Name = "jellysubclientjs", EmbeddedResourcePath = $"{ns}.Web.client.js"   },
         };
     }
 }
