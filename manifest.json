@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/assets/logo.png",
     "versions": [
       {
+        "version": "1.0.3.0",
+        "changelog": "\n### Fixed\n- Reworked JellySub page navigation to use explicit client-side `Dashboard.navigate(...)` routing instead of relying on link handling.\n- Fixed navigation from the settings page to Search, Batch, and Scan pages.\n- Fixed navigation back from Search, Batch, and Scan pages to the main JellySub config page.\n\n### Improved\n- JellySub utility pages remain exposed through Jellyfin's plugin menu for faster access outside the plugin settings screen.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/McLytir/JellySub/releases/download/v1.0.3/jellysub_1.0.3.0.zip",
+        "checksum": "cb2d49e1ad9e6f434a0017abba794ca4",
+        "timestamp": "2026-03-26T12:27:48Z"
+      },
+      {
         "version": "1.0.2.0",
         "changelog": "\n### Fixed\n- Fixed Jellyfin plugin page links to use the client route format expected by the web app (`configurationpage?name=...`).\n- Exposed JellySub search, batch, and scan pages directly in Jellyfin's plugin menu.\n- Removed the incomplete client-side main-page injection attempt that was not actually loaded by Jellyfin.",
         "targetAbi": "10.10.0.0",
