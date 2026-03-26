@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/assets/logo.png",
     "versions": [
       {
+        "version": "1.0.5.0",
+        "changelog": "\n### Added\n- Added Linux, macOS, and Windows uninstall/revert scripts for the JellySub web-client patch.\n- Added JellySub settings actions for downloading uninstall scripts and attempting automatic uninstall on default server paths.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/McLytir/JellySub/releases/download/v1.0.5/jellysub_1.0.5.0.zip",
+        "checksum": "5dab5b1cba4f580b4938f4b1ea778acd",
+        "timestamp": "2026-03-26T13:37:44Z"
+      },
+      {
         "version": "1.0.4.0",
         "changelog": "\n### Added\n- Added downloadable JellySub web-client install scripts for Linux, macOS, and Windows.\n- Added plugin settings UI for downloading those scripts and attempting automatic installation into default Jellyfin web roots.\n- Added embedded JellySub web-client plugin asset so the server plugin can patch local Jellyfin web roots directly.\n\n### Improved\n- Added web-client integration status reporting in the JellySub settings page.\n- Improved instructions for default vs custom Jellyfin web installations.",
         "targetAbi": "10.10.0.0",
