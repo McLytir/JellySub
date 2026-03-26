@@ -10,6 +10,10 @@ const ALL_SOURCES = [
 export default function (view) {
     let config = {};
 
+    view.querySelector('#navSearch').addEventListener('click', () => navigateTo('configurationpage?name=jellysubsearch'));
+    view.querySelector('#navSeries').addEventListener('click', () => navigateTo('configurationpage?name=jellysubseries'));
+    view.querySelector('#navScan').addEventListener('click', () => navigateTo('configurationpage?name=jellysubscan'));
+
     // ── Load ──────────────────────────────────────────────────────────────
     view.addEventListener('viewshow', async () => {
         Dashboard.showLoadingMsg();
@@ -162,6 +166,15 @@ function addLangChip(view, code) {
         <button type="button" style="background:none;border:none;cursor:pointer;color:#ccc;font-size:14px;line-height:1;padding:0 0 0 4px">×</button>`;
     chip.querySelector('button').onclick = () => chip.remove();
     list.appendChild(chip);
+}
+
+function navigateTo(url) {
+    if (Dashboard.navigate) {
+        Dashboard.navigate(url);
+        return;
+    }
+
+    window.location.href = '/' + url;
 }
 
 async function loadSyncTools(view) {

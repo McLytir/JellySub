@@ -8,6 +8,7 @@ let testSubPath     = null;      // path of temp subtitle downloaded for testing
 let testVideoPath   = null;
 
 export default function (view, params) {
+    view.querySelector('#btnBackToConfig').addEventListener('click', () => navigateTo('configurationpage?name=jellysub'));
     if (params.itemId) view.querySelector('#seriesItemId').value = params.itemId;
 
     // Mode buttons
@@ -339,6 +340,15 @@ function makeDownloadPayload(itemId, sub, language, mediaPath, label) {
         ReleaseGroup: sub.ReleaseGroup || '',
         MediaPath:    mediaPath,
     };
+}
+
+function navigateTo(url) {
+    if (Dashboard.navigate) {
+        Dashboard.navigate(url);
+        return;
+    }
+
+    window.location.href = '/' + url;
 }
 
 const escHtml = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

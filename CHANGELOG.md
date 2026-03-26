@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.3] – 2026-03-26
+
+### Fixed
+- Reworked JellySub page navigation to use explicit client-side `Dashboard.navigate(...)` routing instead of relying on link handling.
+- Fixed navigation from the settings page to Search, Batch, and Scan pages.
+- Fixed navigation back from Search, Batch, and Scan pages to the main JellySub config page.
+
+### Improved
+- JellySub utility pages remain exposed through Jellyfin's plugin menu for faster access outside the plugin settings screen.
+
 ## [v1.0.2] – 2026-03-26
 
 ### Fixed

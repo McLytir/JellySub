@@ -5,6 +5,8 @@ let fullLog   = [];
 
 export default function (view) {
 
+    view.querySelector('#btnBackToConfig').addEventListener('click', () => navigateTo('configurationpage?name=jellysub'));
+
     view.addEventListener('viewshow', () => {
         refreshStatus(view);
     });
@@ -115,6 +117,15 @@ function renderLog(view) {
             <span>${detail}</span>`;
         rows.appendChild(row);
     });
+}
+
+function navigateTo(url) {
+    if (Dashboard.navigate) {
+        Dashboard.navigate(url);
+        return;
+    }
+
+    window.location.href = '/' + url;
 }
 
 const escHtml = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

@@ -5,6 +5,8 @@ let results = [];
 
 export default function (view, params) {
 
+    view.querySelector('#btnBackToConfig').addEventListener('click', () => navigateTo('configurationpage?name=jellysub'));
+
     // ── On show ───────────────────────────────────────────────────────────
     view.addEventListener('viewshow', () => {
         // Pre-populate item ID from URL param
@@ -209,6 +211,15 @@ function updateSelCount(view) {
     const btn = view.querySelector('#btnDownloadSelected');
     view.querySelector('#selCount').textContent = n;
     btn.disabled = n === 0;
+}
+
+function navigateTo(url) {
+    if (Dashboard.navigate) {
+        Dashboard.navigate(url);
+        return;
+    }
+
+    window.location.href = '/' + url;
 }
 
 const escHtml = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
