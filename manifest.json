@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/assets/logo.png",
     "versions": [
       {
+        "version": "1.0.2.0",
+        "changelog": "\n### Fixed\n- Fixed Jellyfin plugin page links to use the client route format expected by the web app (`configurationpage?name=...`).\n- Exposed JellySub search, batch, and scan pages directly in Jellyfin's plugin menu.\n- Removed the incomplete client-side main-page injection attempt that was not actually loaded by Jellyfin.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/McLytir/JellySub/releases/download/v1.0.2/jellysub_1.0.2.0.zip",
+        "checksum": "3be48c72af55ece98803aea2328e450a",
+        "timestamp": "2026-03-26T12:22:03Z"
+      },
+      {
         "version": "1.0.1.0",
         "changelog": "\n### Fixed\n- Fixed Jellyfin page routing for JellySub pages so subtitle actions no longer land on the wrong page.\n- Fixed guided batch matching to use the actually selected anchor item instead of assuming the first list item.\n- Fixed series / folder batch analysis to work with folder-style selections and non-episode media items.\n- Added main Jellyfin UI action buttons for subtitle search, batch subtitle actions, and library-level scan access.",
         "targetAbi": "10.10.0.0",
