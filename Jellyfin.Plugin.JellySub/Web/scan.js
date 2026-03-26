@@ -45,9 +45,9 @@ async function refreshStatus(view) {
         });
 
         // Running indicator
-        view.querySelector('#scanRunning').style.display = data.IsRunning ? 'inline' : 'none';
+        view.querySelector('#scanRunning').style.display = data.isRunning ? 'inline' : 'none';
 
-        if (data.IsRunning) {
+        if (data.isRunning) {
             startPolling(view);
         } else {
             if (pollTimer) {
@@ -56,7 +56,7 @@ async function refreshStatus(view) {
             }
         }
 
-        fullLog = data.Log || [];
+        fullLog = data.log || [];
         updateStats(view, fullLog);
         renderLog(view);
 
@@ -69,10 +69,10 @@ function updateStats(view, log) {
     if (!log.length) return;
     view.querySelector('#statsBar').style.display    = 'flex';
     view.querySelector('#logSection').style.display  = 'block';
-    view.querySelector('#statDownloaded').textContent = log.filter(e => e.Status === 'Downloaded').length;
-    view.querySelector('#statNotFound').textContent   = log.filter(e => e.Status === 'NotFound').length;
-    view.querySelector('#statFailed').textContent     = log.filter(e => e.Status === 'Failed' || e.Status === 'Error').length;
-    view.querySelector('#statSkipped').textContent    = log.filter(e => e.Status === 'Skipped').length;
+    view.querySelector('#statDownloaded').textContent = log.filter(e => e.status === 'Downloaded').length;
+    view.querySelector('#statNotFound').textContent   = log.filter(e => e.status === 'NotFound').length;
+    view.querySelector('#statFailed').textContent     = log.filter(e => e.status === 'Failed' || e.status === 'Error').length;
+    view.querySelector('#statSkipped').textContent    = log.filter(e => e.status === 'Skipped').length;
 }
 
 // ── Log table ─────────────────────────────────────────────────────────────────
@@ -81,7 +81,7 @@ function renderLog(view) {
     const filter = view.querySelector('#logFilter').value;
     const rows   = view.querySelector('#logRows');
     const empty  = view.querySelector('#emptyLog');
-    const log    = filter ? fullLog.filter(e => e.Status === filter) : fullLog;
+    const log    = filter ? fullLog.filter(e => e.status === filter) : fullLog;
 
     rows.innerHTML = '';
 
@@ -102,18 +102,18 @@ function renderLog(view) {
             Failed:     '#f44336',
             Error:      '#f44336',
             Skipped:    '#FF9800',
-        }[entry.Status] || '#aaa';
+        }[entry.status] || '#aaa';
 
-        const detail = entry.SavedPath
-            ? `<span title="${escHtml(entry.SavedPath)}" style="color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:260px">${escHtml(entry.SavedPath.split('/').pop())}</span>`
-            : entry.Error
-            ? `<span title="${escHtml(entry.Error)}" style="color:#f44336">${escHtml(entry.Error.slice(0, 60))}</span>`
+        const detail = entry.savedPath
+            ? `<span title="${escHtml(entry.savedPath)}" style="color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:260px">${escHtml(entry.savedPath.split('/').pop())}</span>`
+            : entry.error
+            ? `<span title="${escHtml(entry.error)}" style="color:#f44336">${escHtml(entry.error.slice(0, 60))}</span>`
             : '';
 
         row.innerHTML = `
-            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escHtml(entry.ItemTitle)}">${escHtml(entry.ItemTitle)}</span>
-            <span>${entry.Language.toUpperCase()}</span>
-            <span style="color:${statusColor}">${entry.Status}</span>
+            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escHtml(entry.itemTitle)}">${escHtml(entry.itemTitle)}</span>
+            <span>${entry.language.toUpperCase()}</span>
+            <span style="color:${statusColor}">${entry.status}</span>
             <span>${detail}</span>`;
         rows.appendChild(row);
     });

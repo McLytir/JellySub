@@ -4,6 +4,9 @@
  *   1. copying this file to <webroot>/jellysub-context-plugin.js
  *   2. loading it from index.html before the main app bootstraps
  *   3. adding "jellysubContext" to config.json.plugins
+ *
+ * The plugin exposes a window global so Jellyfin's pluginManager can load it
+ * through the "window plugin" code path.
  */
 (function () {
     if (window.jellysubContext) {
@@ -18,6 +21,8 @@
             this.priority = 0;
 
             this.dashboard = deps?.dashboard || window.Dashboard;
+            this.toast = deps?.toast || { show: () => {}, default: () => {} };
+
             this.lastClickTarget = null;
             this.lastContext = null;
             this.sheetObserver = null;
@@ -68,6 +73,13 @@
             const actions = this.getAvailableActions(context);
             if (!actions.length) return;
 
+            const hasExisting = Array.from(scroller.querySelectorAll('.actionSheetMenuItem'))
+                .some(el => (el.textContent || '').toLowerCase().includes('jellysub'));
+            if (hasExisting) {
+                scroller.dataset.jellysubPatched = 'true';
+                return;
+            }
+
             const divider = document.createElement('div');
             divider.className = 'actionsheetDivider';
             scroller.appendChild(divider);
@@ -96,6 +108,11 @@
                 event.preventDefault();
                 event.stopPropagation();
                 this.handleAction(action);
+
+                const dialog = button.closest('.dialog') || button.closest('.actionSheet') || button.closest('[role="dialog"]');
+                if (dialog && typeof dialog.close === 'function') {
+                    try { dialog.close(); } catch (_) {}
+                }
             });
 
             return button;
@@ -174,7 +191,11 @@
         }
 
         handleAction(action) {
-            action.run();
+            try {
+                action.run();
+            } catch (error) {
+                console.error('[JellySubContext] action failed', error);
+            }
         }
 
         navigate(url) {

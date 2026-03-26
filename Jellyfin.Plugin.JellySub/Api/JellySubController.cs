@@ -575,7 +575,7 @@ public sealed class JellySubController : ControllerBase
     public IActionResult SaveConfig([FromBody] Configuration.PluginConfiguration cfg)
     {
         Plugin.Instance!.UpdateConfiguration(cfg);
-        return NoContent();
+        return Ok(Plugin.Instance.Configuration);
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -861,7 +861,7 @@ public sealed class JellySubController : ControllerBase
         "from pathlib import Path\n" +
         "p = Path(r'''$index''')\n" +
         "text = p.read_text(encoding='utf-8')\n" +
-        "text = text.replace('</body>', '    <script src=\\\"jellysub-context-plugin.js\\\"></script>\\n</body>', 1) if '</body>' in text else text.replace('</head>', '    <script src=\\\"jellysub-context-plugin.js\\\"></script>\\n</head>', 1)\n" +
+        "text = text.replace('</body>', '    <script src=\"jellysub-context-plugin.js\"></script>\\n</body>', 1) if '</body>' in text else text.replace('</head>', '    <script src=\"jellysub-context-plugin.js\"></script>\\n</head>', 1)\n" +
         "p.write_text(text, encoding='utf-8')\n" +
         "PY\n" +
         "  python3 - <<PY\n" +
@@ -898,7 +898,7 @@ public sealed class JellySubController : ControllerBase
         "from pathlib import Path\n" +
         "p = Path(r'''$index''')\n" +
         "text = p.read_text(encoding='utf-8')\n" +
-        "text = text.replace('</body>', '    <script src=\\\"jellysub-context-plugin.js\\\"></script>\\n</body>', 1) if '</body>' in text else text.replace('</head>', '    <script src=\\\"jellysub-context-plugin.js\\\"></script>\\n</head>', 1)\n" +
+        "text = text.replace('</body>', '    <script src=\"jellysub-context-plugin.js\"></script>\\n</body>', 1) if '</body>' in text else text.replace('</head>', '    <script src=\"jellysub-context-plugin.js\"></script>\\n</head>', 1)\n" +
         "p.write_text(text, encoding='utf-8')\n" +
         "PY\n" +
         "  python3 - <<PY\n" +
@@ -949,13 +949,13 @@ public sealed class JellySubController : ControllerBase
     private static string BuildLinuxUninstallScript() => "#!/usr/bin/env bash\n" +
         "set -euo pipefail\n\n" +
         "CANDIDATES=(\n  \"/usr/share/jellyfin/web\"\n  \"/var/lib/jellyfin/web\"\n  \"/opt/jellyfin-web\"\n)\n\n" +
-        "revert_root() {\n  local root=\"$1\"\n  local plugin=\"$root/jellysub-context-plugin.js\"\n  local index=\"$root/index.html\"\n  local config=\"$root/config.json\"\n  [[ -f \"$index\" && -f \"$config\" ]] || return 1\n  rm -f \"$plugin\"\n  python3 - <<PY\nfrom pathlib import Path\np = Path(r'''$index''')\ntext = p.read_text(encoding='utf-8').replace('    <script src=\\\"jellysub-context-plugin.js\\\"></script>\\n', '').replace('    <script src=\\\"jellysub-context-plugin.js\\\"></script>\\r\\n', '')\np.write_text(text, encoding='utf-8')\nPY\n  python3 - <<PY\nimport json\nfrom pathlib import Path\np = Path(r'''$config''')\ndata = json.loads(p.read_text(encoding='utf-8'))\nplugins = data.get('plugins', [])\nif isinstance(plugins, list): data['plugins'] = [p for p in plugins if p != 'jellysubContext']\np.write_text(json.dumps(data, indent=2) + '\\n', encoding='utf-8')\nPY\n  echo \"Reverted: $root\"\n}\n\n" +
+        "revert_root() {\n  local root=\"$1\"\n  local plugin=\"$root/jellysub-context-plugin.js\"\n  local index=\"$root/index.html\"\n  local config=\"$root/config.json\"\n  [[ -f \"$index\" && -f \"$config\" ]] || return 1\n  rm -f \"$plugin\"\n  python3 - <<PY\nfrom pathlib import Path\np = Path(r'''$index''')\ntext = p.read_text(encoding='utf-8').replace('    <script src=\"jellysub-context-plugin.js\"></script>\\n', '').replace('    <script src=\"jellysub-context-plugin.js\"></script>\\r\\n', '')\np.write_text(text, encoding='utf-8')\nPY\n  python3 - <<PY\nimport json\nfrom pathlib import Path\np = Path(r'''$config''')\ndata = json.loads(p.read_text(encoding='utf-8'))\nplugins = data.get('plugins', [])\nif isinstance(plugins, list): data['plugins'] = [p for p in plugins if p != 'jellysubContext']\np.write_text(json.dumps(data, indent=2) + '\\n', encoding='utf-8')\nPY\n  echo \"Reverted: $root\"\n}\n\n" +
         "found=0\nfor root in \"${CANDIDATES[@]}\"; do\n  if revert_root \"$root\"; then found=1; fi\ndone\nif [[ \"$found\" -eq 0 ]]; then echo \"No default Jellyfin web root found. Edit CANDIDATES in this script for a custom install.\"; exit 1; fi\necho \"Done. Restart Jellyfin / clear browser cache.\"\n";
 
     private static string BuildMacUninstallScript() => "#!/usr/bin/env bash\n" +
         "set -euo pipefail\n\n" +
         "CANDIDATES=(\n  \"/Applications/Jellyfin.app/Contents/Resources/jellyfin-web\"\n  \"/Applications/Jellyfin Desktop.app/Contents/Resources/jellyfin-web\"\n  \"$HOME/Applications/Jellyfin.app/Contents/Resources/jellyfin-web\"\n  \"$HOME/Applications/Jellyfin Desktop.app/Contents/Resources/jellyfin-web\"\n)\n\n" +
-        "revert_root() {\n  local root=\"$1\"\n  local plugin=\"$root/jellysub-context-plugin.js\"\n  local index=\"$root/index.html\"\n  local config=\"$root/config.json\"\n  [[ -f \"$index\" && -f \"$config\" ]] || return 1\n  rm -f \"$plugin\"\n  python3 - <<PY\nfrom pathlib import Path\np = Path(r'''$index''')\ntext = p.read_text(encoding='utf-8').replace('    <script src=\\\"jellysub-context-plugin.js\\\"></script>\\n', '').replace('    <script src=\\\"jellysub-context-plugin.js\\\"></script>\\r\\n', '')\np.write_text(text, encoding='utf-8')\nPY\n  python3 - <<PY\nimport json\nfrom pathlib import Path\np = Path(r'''$config''')\ndata = json.loads(p.read_text(encoding='utf-8'))\nplugins = data.get('plugins', [])\nif isinstance(plugins, list): data['plugins'] = [p for p in plugins if p != 'jellysubContext']\np.write_text(json.dumps(data, indent=2) + '\\n', encoding='utf-8')\nPY\n  echo \"Reverted: $root\"\n}\n\n" +
+        "revert_root() {\n  local root=\"$1\"\n  local plugin=\"$root/jellysub-context-plugin.js\"\n  local index=\"$root/index.html\"\n  local config=\"$root/config.json\"\n  [[ -f \"$index\" && -f \"$config\" ]] || return 1\n  rm -f \"$plugin\"\n  python3 - <<PY\nfrom pathlib import Path\np = Path(r'''$index''')\ntext = p.read_text(encoding='utf-8').replace('    <script src=\"jellysub-context-plugin.js\"></script>\\n', '').replace('    <script src=\"jellysub-context-plugin.js\"></script>\\r\\n', '')\np.write_text(text, encoding='utf-8')\nPY\n  python3 - <<PY\nimport json\nfrom pathlib import Path\np = Path(r'''$config''')\ndata = json.loads(p.read_text(encoding='utf-8'))\nplugins = data.get('plugins', [])\nif isinstance(plugins, list): data['plugins'] = [p for p in plugins if p != 'jellysubContext']\np.write_text(json.dumps(data, indent=2) + '\\n', encoding='utf-8')\nPY\n  echo \"Reverted: $root\"\n}\n\n" +
         "found=0\nfor root in \"${CANDIDATES[@]}\"; do\n  if revert_root \"$root\"; then found=1; fi\ndone\nif [[ \"$found\" -eq 0 ]]; then echo \"No default Jellyfin web root found. Edit CANDIDATES in this script for a custom install.\"; exit 1; fi\necho \"Done. Restart Jellyfin / Jellyfin Desktop and clear browser cache.\"\n";
 
     private static string BuildWindowsUninstallScript() =>

@@ -41,7 +41,7 @@ public sealed class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         return new[]
         {
             // Settings / entry-point page
-            new PluginPageInfo { Name = "jellysub",         DisplayName = "JellySub", EmbeddedResourcePath = $"{ns}.Web.config.html" },
+            new PluginPageInfo { Name = "jellysub", DisplayName = "JellySub Settings", EnableInMainMenu = true, MenuSection = "plugins", MenuIcon = "settings", EmbeddedResourcePath = $"{ns}.Web.config.html" },
             new PluginPageInfo { Name = "jellysubjs",       EmbeddedResourcePath = $"{ns}.Web.config.js"   },
 
             // Subtitle search (manual + assisted)

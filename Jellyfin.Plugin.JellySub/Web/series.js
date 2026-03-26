@@ -61,7 +61,7 @@ async function analyzeClick(view) {
         const data = await ApiClient.ajax({
             type: 'POST',
             url: ApiClient.getUrl(`${API}/series/analyze`),
-            data: JSON.stringify({ ItemId: itemId, Language: lang }),
+            data: JSON.stringify({ itemId, language: lang }),
             contentType: 'application/json',
         });
         analysisData = data;
@@ -86,7 +86,7 @@ async function runAutoMatch(view, seriesItemId, lang) {
     // Downloads happen when user confirms
     view.querySelector('#confirmSection').style.display = 'flex';
     view.querySelector('#matchSummary').textContent =
-        `${analysisData.Episodes.filter(e => !e.HasSubtitle).length} episode(s) need subtitles`;
+        `${analysisData.episodes.filter(e => !e.hasSubtitle).length} episode(s) need subtitles`;
     view.querySelector('#btnConfirmDownload').dataset.mode     = 'auto';
     view.querySelector('#btnConfirmDownload').dataset.seriesId = view.querySelector('#seriesItemId').value.trim();
     view.querySelector('#btnConfirmDownload').dataset.lang     = lang;
@@ -95,7 +95,7 @@ async function runAutoMatch(view, seriesItemId, lang) {
 // ── Guided mode ───────────────────────────────────────────────────────────────
 
 async function loadEp1Candidates(view, data, lang) {
-    const ep1 = data.Episodes.find(e => !e.HasSubtitle);
+    const ep1 = data.episodes.find(e => !e.hasSubtitle);
     if (!ep1) {
         view.querySelector('#ep1Pane').style.display = 'none';
         view.querySelector('#confirmSection').style.display = 'flex';
@@ -107,11 +107,11 @@ async function loadEp1Candidates(view, data, lang) {
     view.querySelector('#ep1Searching').style.display = 'block';
     view.querySelector('#ep1Results').innerHTML = '';
 
-    const url = ApiClient.getUrl(`${API}/search`, { itemId: ep1.ItemId, languages: lang });
+    const url = ApiClient.getUrl(`${API}/search`, { itemId: ep1.itemId, languages: lang });
     const res = await ApiClient.ajax({ type: 'GET', url });
     view.querySelector('#ep1Searching').style.display = 'none';
 
-    const results = res.Results || [];
+    const results = res.results || [];
     renderEp1Candidates(view, results, ep1, lang);
 }
 
@@ -125,18 +125,18 @@ function renderEp1Candidates(view, results, ep1, lang) {
     results.slice(0, 15).forEach((r, i) => {
         const row = document.createElement('div');
         row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:6px 0;' +
-            `border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;${r.IsHashMatch ? 'background:rgba(76,175,80,.05)' : ''}`;
+            `border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;${r.isHashMatch ? 'background:rgba(76,175,80,.05)' : ''}`;
         const badges = [
-            r.IsHashMatch       ? '<span style="background:#4CAF50;color:#000;font-size:10px;border-radius:3px;padding:1px 4px">HASH</span>' : '',
-            r.IsHearingImpaired ? '<span style="background:#2196F3;color:#fff;font-size:10px;border-radius:3px;padding:1px 4px">SDH</span>'  : '',
+            r.isHashMatch       ? '<span style="background:#4CAF50;color:#000;font-size:10px;border-radius:3px;padding:1px 4px">HASH</span>' : '',
+            r.isHearingImpaired ? '<span style="background:#2196F3;color:#fff;font-size:10px;border-radius:3px;padding:1px 4px">SDH</span>'  : '',
         ].join(' ');
         row.innerHTML = `
             <input type="radio" name="ep1choice" value="${i}" style="flex-shrink:0" />
             <div style="flex:1;min-width:0">
-              <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${badges} ${escHtml(r.ReleaseName)}</div>
-              <div style="font-size:11px;color:#888">${r.SourceName} · ${r.LanguageName}
-                ${r.DownloadCount ? '· ⬇' + r.DownloadCount.toLocaleString() : ''}
-                ${r.Uploader ? '· 👤' + escHtml(r.Uploader) : ''}</div>
+              <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${badges} ${escHtml(r.releaseName)}</div>
+              <div style="font-size:11px;color:#888">${r.sourceName} · ${r.languageName}
+                ${r.downloadCount ? '· ⬇' + r.downloadCount.toLocaleString() : ''}
+                ${r.uploader ? '· 👤' + escHtml(r.uploader) : ''}</div>
             </div>`;
         row.addEventListener('click', () => {
             row.querySelector('input').checked = true;
@@ -155,7 +155,7 @@ async function runGuidedMatch(view, ep1, lang) {
         const data = await ApiClient.ajax({
             type: 'POST',
             url: ApiClient.getUrl(`${API}/series/match`),
-            data: JSON.stringify({ SeriesItemId: seriesItemId, AnchorItemId: ep1.ItemId, Language: lang, Anchor: ep1Anchor }),
+            data: JSON.stringify({ seriesItemId, anchorItemId: ep1.itemId, language: lang, anchor: ep1Anchor }),
             contentType: 'application/json',
         });
         matchedEpisodes = data;
@@ -164,9 +164,9 @@ async function runGuidedMatch(view, ep1, lang) {
         await preparePlayerTest(view, ep1, lang);
         view.querySelector('#testSection').style.display = 'block';
         view.querySelector('#confirmSection').style.display = 'flex';
-        const found = data.Episodes.filter(e => e.ChosenSubtitle).length;
+        const found = data.episodes.filter(e => e.chosenSubtitle).length;
         view.querySelector('#matchSummary').textContent =
-            `${found} / ${data.Episodes.length} episodes matched`;
+            `${found} / ${data.episodes.length} episodes matched`;
     } catch (e) {
         Dashboard.processErrorResponse({ statusText: 'Matching failed: ' + e });
     } finally {
@@ -183,22 +183,22 @@ async function preparePlayerTest(view, ep1, lang) {
             type: 'POST',
             url: ApiClient.getUrl(`${API}/player/test`),
             data: JSON.stringify({
-                ItemId:      ep1.ItemId,
-                SourceId:    ep1Anchor.SourceId,
-                SubtitleId:  ep1Anchor.Id,
-                DownloadUrl: ep1Anchor.DownloadUrl,
-                Language:    ep1Anchor.Language,
-                ReleaseName: ep1Anchor.ReleaseName,
+                itemId:      ep1.itemId,
+                sourceId:    ep1Anchor.sourceId,
+                subtitleId:  ep1Anchor.id,
+                downloadUrl: ep1Anchor.downloadUrl,
+                language:    ep1Anchor.language,
+                releaseName: ep1Anchor.releaseName,
             }),
             contentType: 'application/json',
         });
-        testVideoPath = res.VideoPath;
-        testSubPath   = res.SubtitlePath;
-        view.querySelector('#vlcCmd').textContent = res.VlcCommand;
+        testVideoPath = res.videoPath;
+        testSubPath   = res.subtitlePath;
+        view.querySelector('#vlcCmd').textContent = res.vlcCommand;
         // XSPF download link
         const xspfUrl = ApiClient.getUrl(`${API}/player/playlist`, {
-            videoPath:    res.VideoPath,
-            subtitlePath: res.SubtitlePath,
+            videoPath:    res.videoPath,
+            subtitlePath: res.subtitlePath,
         });
         view.querySelector('#btnXspf').href = xspfUrl;
     } catch { /* non-critical */ }
@@ -219,17 +219,17 @@ async function runSync(view) {
             type: 'POST',
             url: ApiClient.getUrl(`${API}/sync`),
             data: JSON.stringify({
-                ToolId:               toolId,
-                VideoPath:            testVideoPath,
-                SubtitlePath:         testSubPath,
-                ReferenceSubtitlePath: refSub,
-                OutputPath:           testSubPath, // overwrite
+                toolId,
+                videoPath:            testVideoPath,
+                subtitlePath:         testSubPath,
+                referenceSubtitlePath: refSub,
+                outputPath:           testSubPath, // overwrite
             }),
             contentType: 'application/json',
         });
-        statusEl.textContent = res.Success
-            ? '✓ Sync complete: ' + res.OutputPath
-            : '✗ Sync failed: ' + res.Error;
+        statusEl.textContent = res.success
+            ? '✓ Sync complete: ' + res.outputPath
+            : '✗ Sync failed: ' + res.error;
     } catch (e) {
         statusEl.textContent = '✗ Error: ' + e;
     }
@@ -244,8 +244,8 @@ async function confirmDownload(view) {
     const itemId  = view.querySelector('#seriesItemId').value.trim();
 
     const episodes = isAuto
-        ? analysisData?.Episodes.filter(e => !e.HasSubtitle) || []
-        : matchedEpisodes?.Episodes.filter(e => e.ChosenSubtitle) || [];
+        ? analysisData?.episodes.filter(e => !e.hasSubtitle) || []
+        : matchedEpisodes?.episodes.filter(e => e.chosenSubtitle) || [];
 
     if (!episodes.length) { Dashboard.toast('Nothing to download'); return; }
 
@@ -256,21 +256,21 @@ async function confirmDownload(view) {
 
     let done = 0;
     for (const ep of episodes) {
-        statusEl.textContent = `Downloading: ${ep.Label}…`;
+        statusEl.textContent = `Downloading: ${ep.label}…`;
         try {
             let payload;
             if (isAuto) {
                 // Search first, pick best
                 const searchRes = await ApiClient.ajax({
                     type: 'GET',
-                    url: ApiClient.getUrl(`${API}/search`, { itemId: ep.ItemId, languages: lang }),
+                    url: ApiClient.getUrl(`${API}/search`, { itemId: ep.itemId, languages: lang }),
                 });
-                const best = searchRes.Results?.[0];
+                const best = searchRes.results?.[0];
                 if (!best) { done++; continue; }
-                payload = makeDownloadPayload(ep.ItemId, best, lang);
+                payload = makeDownloadPayload(ep.itemId, best, lang);
             } else {
-                const sub = ep.ChosenSubtitle;
-                payload = makeDownloadPayload(ep.ItemId, sub, lang, ep.MediaPath, ep.Label);
+                const sub = ep.chosenSubtitle;
+                payload = makeDownloadPayload(ep.itemId, sub, lang, ep.mediaPath, ep.label);
             }
 
             const res = await ApiClient.ajax({
@@ -279,11 +279,11 @@ async function confirmDownload(view) {
                 data: JSON.stringify(payload),
                 contentType: 'application/json',
             });
-            statusEl.textContent = res.Success
-                ? `✓ ${ep.Label}: ${res.SavedPath}`
-                : `✗ ${ep.Label}: ${res.Error}`;
+            statusEl.textContent = res.success
+                ? `✓ ${ep.label}: ${res.savedPath}`
+                : `✗ ${ep.label}: ${res.error}`;
         } catch (e) {
-            statusEl.textContent = `✗ ${ep.Label}: ${e}`;
+            statusEl.textContent = `✗ ${ep.label}: ${e}`;
         }
         done++;
         progressBar.style.width = `${Math.round(done / episodes.length * 100)}%`;
@@ -297,48 +297,48 @@ async function confirmDownload(view) {
 
 function renderEpisodeList(view, data, lang) {
     view.querySelector('#episodeSection').style.display = 'block';
-    view.querySelector('#seriesName').textContent       = data.SeriesTitle;
+    view.querySelector('#seriesName').textContent       = data.seriesTitle;
     const list = view.querySelector('#episodeList');
     list.innerHTML = '';
 
-    data.Episodes.forEach(ep => {
+    data.episodes.forEach(ep => {
         const row = document.createElement('div');
-        row.id = `eprow-${ep.ItemId}`;
+        row.id = `eprow-${ep.itemId}`;
         row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:6px 10px;' +
             'border-bottom:1px solid rgba(255,255,255,.06);font-size:13px';
-        const icon = ep.HasSubtitle ? '✓' : '○';
-        const color = ep.HasSubtitle ? '#4CAF50' : '#aaa';
+        const icon = ep.hasSubtitle ? '✓' : '○';
+        const color = ep.hasSubtitle ? '#4CAF50' : '#aaa';
         row.innerHTML = `
             <span style="color:${color};width:16px;text-align:center">${icon}</span>
-            <span style="flex:1">${escHtml(ep.Label)}</span>
-            <span id="epmatch-${ep.ItemId}" style="font-size:11px;color:#888"></span>`;
+            <span style="flex:1">${escHtml(ep.label)}</span>
+            <span id="epmatch-${ep.itemId}" style="font-size:11px;color:#888"></span>`;
         list.appendChild(row);
     });
 }
 
 function updateEpisodeListWithMatches(view, data) {
-    data.Episodes.forEach(ep => {
-        const el = view.querySelector(`#epmatch-${ep.ItemId}`);
+    data.episodes.forEach(ep => {
+        const el = view.querySelector(`#epmatch-${ep.itemId}`);
         if (!el) return;
-        if (ep.HasSubtitle) { el.textContent = 'already has subtitle'; return; }
-        if (!ep.ChosenSubtitle) { el.textContent = '— no match found'; el.style.color = '#f44336'; return; }
-        const method = { UploaderMatch: '👤 uploader', PatternMatch: '🏷 pattern', BestAvailable: '📊 best', Manual: '✋ manual', NotFound: '✗' }[ep.MatchMethod] || ep.MatchMethod;
-        el.textContent = `${method}: ${ep.ChosenSubtitle.ReleaseName.slice(0, 50)}`;
+        if (ep.hasSubtitle) { el.textContent = 'already has subtitle'; return; }
+        if (!ep.chosenSubtitle) { el.textContent = '— no match found'; el.style.color = '#f44336'; return; }
+        const method = { UploaderMatch: '👤 uploader', PatternMatch: '🏷 pattern', BestAvailable: '📊 best', Manual: '✋ manual', NotFound: '✗' }[ep.matchMethod] || ep.matchMethod;
+        el.textContent = `${method}: ${ep.chosenSubtitle.releaseName.slice(0, 50)}`;
     });
 }
 
 function makeDownloadPayload(itemId, sub, language, mediaPath, label) {
     return {
-        ItemId:       itemId,
-        Label:        label,
-        SourceId:     sub.SourceId,
-        SubtitleId:   sub.Id,
-        DownloadUrl:  sub.DownloadUrl,
-        Language:     language,
-        ReleaseName:  sub.ReleaseName,
-        Uploader:     sub.Uploader     || '',
-        ReleaseGroup: sub.ReleaseGroup || '',
-        MediaPath:    mediaPath,
+        itemId,
+        label,
+        sourceId:     sub.sourceId,
+        subtitleId:   sub.id,
+        downloadUrl:  sub.downloadUrl,
+        language,
+        releaseName:  sub.releaseName,
+        uploader:     sub.uploader     || '',
+        releaseGroup: sub.releaseGroup || '',
+        mediaPath,
     };
 }
 

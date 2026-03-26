@@ -45,13 +45,13 @@ export default function (view) {
         Dashboard.showLoadingMsg();
         try {
             const updated = readForm(view, config);
-            await ApiClient.ajax({
+            const saved = await ApiClient.ajax({
                 type: 'POST',
                 url: ApiClient.getUrl(`${API}/config`),
                 data: JSON.stringify(updated),
                 contentType: 'application/json',
             });
-            config = updated;
+            config = saved || updated;
             const status = view.querySelector('#saveStatus');
             status.style.display = 'block';
             setTimeout(() => { status.style.display = 'none'; }, 3000);
@@ -83,13 +83,13 @@ export default function (view) {
             const res = await ApiClient.ajax({
                 type: 'POST',
                 url: ApiClient.getUrl(`${API}/sync/tools/install`),
-                data: JSON.stringify({ ToolId: toolId }),
+                data: JSON.stringify({ toolId }),
                 contentType: 'application/json',
             });
-            if (res.Success) {
-                Dashboard.alert('Installed successfully!\n' + res.Output);
+            if (res.success) {
+                Dashboard.alert('Installed successfully!\n' + res.output);
             } else {
-                Dashboard.alert('Install failed:\n' + res.Output);
+                Dashboard.alert('Install failed:\n' + res.output);
             }
         } catch (ex) {
             Dashboard.alert('Install error: ' + ex);
@@ -101,10 +101,13 @@ export default function (view) {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function populateForm(view, cfg) {
+    // Jellyfin's JSON serializer outputs camelCase; support both camelCase and PascalCase
+    const get = (camel, Pascal) => cfg[camel] !== undefined ? cfg[camel] : cfg[Pascal];
+
     // Sources
     const container = view.querySelector('#sourceList');
     container.innerHTML = '';
-    const ordered = (cfg.EnabledSources || ALL_SOURCES.map(s => s.id));
+    const ordered = get('enabledSources', 'EnabledSources') || ALL_SOURCES.map(s => s.id);
     // Show enabled first in order, then disabled
     const allIds = [...new Set([...ordered, ...ALL_SOURCES.map(s => s.id)])];
     allIds.forEach(id => {
@@ -117,18 +120,18 @@ function populateForm(view, cfg) {
     // Languages
     const langList = view.querySelector('#langList');
     langList.innerHTML = '';
-    (cfg.PreferredLanguages || ['en']).forEach(l => addLangChip(view, l));
+    (get('preferredLanguages', 'PreferredLanguages') || ['en']).forEach(l => addLangChip(view, l));
 
     // Checkboxes / selects
-    view.querySelector('#fallbackLang').checked      = cfg.FallbackToAnyLanguage || false;
-    view.querySelector('#defaultMode').value         = cfg.DefaultItemMode        || 'Assisted';
-    view.querySelector('#overwriteExisting').checked = cfg.OverwriteExisting      || false;
-    view.querySelector('#minDownloads').value        = cfg.MinimumDownloadCount   ?? 0;
-    view.querySelector('#scanSchedule').value        = cfg.BatchScanSchedule      || 'Manual';
-    view.querySelector('#autoSync').value            = cfg.AutoSyncAfterDownload  || 'Off';
-    view.querySelector('#syncKeepOriginal').checked  = cfg.SyncKeepOriginal !== false;
-    view.querySelector('#ffsubsyncPath').value       = cfg.FfsubsyncPath          || '';
-    view.querySelector('#alassPath').value           = cfg.AlassPath              || '';
+    view.querySelector('#fallbackLang').checked      = get('fallbackToAnyLanguage', 'FallbackToAnyLanguage') || false;
+    view.querySelector('#defaultMode').value         = get('defaultItemMode', 'DefaultItemMode')             || 'Assisted';
+    view.querySelector('#overwriteExisting').checked = get('overwriteExisting', 'OverwriteExisting')         || false;
+    view.querySelector('#minDownloads').value        = get('minimumDownloadCount', 'MinimumDownloadCount')   ?? 0;
+    view.querySelector('#scanSchedule').value        = get('batchScanSchedule', 'BatchScanSchedule')         || 'Manual';
+    view.querySelector('#autoSync').value            = get('autoSyncAfterDownload', 'AutoSyncAfterDownload') || 'Off';
+    view.querySelector('#syncKeepOriginal').checked  = get('syncKeepOriginal', 'SyncKeepOriginal') !== false;
+    view.querySelector('#ffsubsyncPath').value       = get('ffsubsyncPath', 'FfsubsyncPath')                 || '';
+    view.querySelector('#alassPath').value           = get('alassPath', 'AlassPath')                         || '';
 }
 
 function readForm(view, existing) {
@@ -141,17 +144,17 @@ function readForm(view, existing) {
 
     return {
         ...existing,
-        EnabledSources:       enabledSources,
-        PreferredLanguages:   langs,
-        FallbackToAnyLanguage: view.querySelector('#fallbackLang').checked,
-        DefaultItemMode:       view.querySelector('#defaultMode').value,
-        OverwriteExisting:     view.querySelector('#overwriteExisting').checked,
-        MinimumDownloadCount:  parseInt(view.querySelector('#minDownloads').value, 10) || 0,
-        BatchScanSchedule:     view.querySelector('#scanSchedule').value,
-        AutoSyncAfterDownload: view.querySelector('#autoSync').value,
-        SyncKeepOriginal:      view.querySelector('#syncKeepOriginal').checked,
-        FfsubsyncPath:         view.querySelector('#ffsubsyncPath').value.trim(),
-        AlassPath:             view.querySelector('#alassPath').value.trim(),
+        enabledSources,
+        preferredLanguages:   langs,
+        fallbackToAnyLanguage: view.querySelector('#fallbackLang').checked,
+        defaultItemMode:       view.querySelector('#defaultMode').value,
+        overwriteExisting:     view.querySelector('#overwriteExisting').checked,
+        minimumDownloadCount:  parseInt(view.querySelector('#minDownloads').value, 10) || 0,
+        batchScanSchedule:     view.querySelector('#scanSchedule').value,
+        autoSyncAfterDownload: view.querySelector('#autoSync').value,
+        syncKeepOriginal:      view.querySelector('#syncKeepOriginal').checked,
+        ffsubsyncPath:         view.querySelector('#ffsubsyncPath').value.trim(),
+        alassPath:             view.querySelector('#alassPath').value.trim(),
     };
 }
 
@@ -195,11 +198,11 @@ async function loadWebClientStatus(view) {
     const el = view.querySelector('#webClientStatus');
     try {
         const data = await ApiClient.ajax({ type: 'GET', url: ApiClient.getUrl(`${API}/webclient/status`) });
-        const installed = data.PatchedRoots?.length || 0;
-        const candidates = data.CandidateRoots?.length || 0;
-        const roots = (data.CandidateRoots || []).map(r => `<li><code>${escHtml(r)}</code></li>`).join('');
+        const installed = data.patchedRoots?.length || 0;
+        const candidates = data.candidateRoots?.length || 0;
+        const roots = (data.candidateRoots || []).map(r => `<li><code>${escHtml(r)}</code></li>`).join('');
         el.innerHTML = `
-            <div><strong>Detected OS:</strong> ${escHtml(data.Platform || 'unknown')}</div>
+            <div><strong>Detected OS:</strong> ${escHtml(data.platform || 'unknown')}</div>
             <div style="margin-top:4px"><strong>Default web roots checked:</strong> ${candidates}</div>
             <div style="margin-top:4px"><strong>Already patched:</strong> ${installed}</div>
             ${roots ? `<details style="margin-top:8px"><summary>Show checked paths</summary><ul style="margin:8px 0 0 18px">${roots}</ul></details>` : ''}
@@ -224,9 +227,9 @@ async function runWebClientAction(view, endpoint, label) {
             type: 'POST',
             url: ApiClient.getUrl(`${API}/webclient/${endpoint}`),
         });
-        const ok = res.Success ? '✓' : '✗';
-        const details = (res.Results || []).map(r => `${r.Path}: ${r.Status}${r.Message ? ' — ' + r.Message : ''}`).join('\n');
-        Dashboard.alert(`${ok} ${res.Message}${details ? `\n\n${details}` : ''}`);
+        const ok = res.success ? '✓' : '✗';
+        const details = (res.results || []).map(r => `${r.path}: ${r.status}${r.message ? ' — ' + r.message : ''}`).join('\n');
+        Dashboard.alert(`${ok} ${res.message}${details ? `\n\n${details}` : ''}`);
         await loadWebClientStatus(view);
     } catch (e) {
         Dashboard.alert(`Web-client ${label} failed: ` + e);
@@ -242,20 +245,20 @@ async function loadSyncTools(view) {
     try {
         const res = await ApiClient.ajax({ type: 'GET', url: ApiClient.getUrl(`${API}/sync/tools`) });
         section.innerHTML = '';
-        (res.Tools || []).forEach(t => {
+        (res.tools || []).forEach(t => {
             const row = document.createElement('div');
             row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08);max-width:640px';
             row.innerHTML = `
                 <div>
-                  <strong>${t.DisplayName}</strong>
-                  <span style="margin-left:8px;font-size:12px;color:${t.IsInstalled ? '#4CAF50' : '#f44336'}">
-                    ${t.IsInstalled ? '● Installed' + (t.Version ? ' v' + t.Version : '') : '● Not installed'}
+                  <strong>${t.displayName}</strong>
+                  <span style="margin-left:8px;font-size:12px;color:${t.isInstalled ? '#4CAF50' : '#f44336'}">
+                    ${t.isInstalled ? '● Installed' + (t.version ? ' v' + t.version : '') : '● Not installed'}
                   </span>
-                  <div style="font-size:12px;color:#aaa;margin-top:2px">${t.Description}</div>
+                  <div style="font-size:12px;color:#aaa;margin-top:2px">${t.description}</div>
                 </div>
-                ${!t.IsInstalled
+                ${!t.isInstalled
                     ? `<button is="emby-button" type="button" class="raised button-alt"
-                              data-install-tool="${t.ToolId}" style="white-space:nowrap">
+                              data-install-tool="${t.toolId}" style="white-space:nowrap">
                          Install
                        </button>`
                     : ''}`;

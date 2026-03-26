@@ -88,11 +88,11 @@ async function doSearch(view, url) {
     hideAll(view);
     try {
         const data = await ApiClient.ajax({ type: 'GET', url });
-        if (data.Error) {
-            Dashboard.processErrorResponse({ statusText: data.Error });
+        if (data.error) {
+            Dashboard.processErrorResponse({ statusText: data.error });
             return;
         }
-        results = data.Results || [];
+        results = data.results || [];
         renderResults(view, results);
     } catch (e) {
         Dashboard.processErrorResponse({ statusText: 'Search failed: ' + e });
@@ -120,13 +120,13 @@ function renderResults(view, res) {
         row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;' +
             `background:${i % 2 === 0 ? 'rgba(255,255,255,.04)' : 'rgba(255,255,255,.02)'}`;
 
-        const hashBadge  = r.IsHashMatch         ? '<span class="label" style="background:#4CAF50;color:#000;font-size:10px;border-radius:3px;padding:1px 5px">HASH</span> ' : '';
-        const sdBadge    = r.IsHearingImpaired    ? '<span class="label" style="background:#2196F3;color:#fff;font-size:10px;border-radius:3px;padding:1px 5px">SDH</span> '  : '';
-        const mtBadge    = r.IsMachineTranslated  ? '<span class="label" style="background:#FF9800;color:#000;font-size:10px;border-radius:3px;padding:1px 5px">MT</span> '   : '';
-        const srcBadge   = `<span style="font-size:11px;color:#888;border:1px solid rgba(255,255,255,.2);border-radius:3px;padding:1px 5px">${r.SourceName}</span>`;
-        const dlCount    = r.DownloadCount > 0 ? `<span style="font-size:11px;color:#aaa">⬇ ${r.DownloadCount.toLocaleString()}</span>` : '';
-        const uploader   = r.Uploader ? `<span style="font-size:11px;color:#aaa">👤 ${r.Uploader}</span>` : '';
-        const dateStr    = r.UploadDate ? new Date(r.UploadDate).toLocaleDateString() : '';
+        const hashBadge  = r.isHashMatch         ? '<span class="label" style="background:#4CAF50;color:#000;font-size:10px;border-radius:3px;padding:1px 5px">HASH</span> ' : '';
+        const sdBadge    = r.isHearingImpaired    ? '<span class="label" style="background:#2196F3;color:#fff;font-size:10px;border-radius:3px;padding:1px 5px">SDH</span> '  : '';
+        const mtBadge    = r.isMachineTranslated  ? '<span class="label" style="background:#FF9800;color:#000;font-size:10px;border-radius:3px;padding:1px 5px">MT</span> '   : '';
+        const srcBadge   = `<span style="font-size:11px;color:#888;border:1px solid rgba(255,255,255,.2);border-radius:3px;padding:1px 5px">${r.sourceName}</span>`;
+        const dlCount    = r.downloadCount > 0 ? `<span style="font-size:11px;color:#aaa">⬇ ${r.downloadCount.toLocaleString()}</span>` : '';
+        const uploader   = r.uploader ? `<span style="font-size:11px;color:#aaa">👤 ${r.uploader}</span>` : '';
+        const dateStr    = r.uploadDate ? new Date(r.uploadDate).toLocaleDateString() : '';
 
         row.innerHTML = `
             <input type="checkbox" class="result-checkbox" data-idx="${i}"
@@ -134,11 +134,11 @@ function renderResults(view, res) {
             <div style="flex:1;min-width:0">
               <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px">
                 ${hashBadge}${sdBadge}${mtBadge}
-                <strong>${escHtml(r.ReleaseName || r.Id)}</strong>
+                <strong>${escHtml(r.releaseName || r.id)}</strong>
               </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:3px">
                 ${srcBadge}
-                <span style="font-size:11px;background:rgba(255,255,255,.1);border-radius:3px;padding:1px 5px">${r.LanguageName}</span>
+                <span style="font-size:11px;background:rgba(255,255,255,.1);border-radius:3px;padding:1px 5px">${r.languageName}</span>
                 ${dlCount}${uploader}
                 ${dateStr ? `<span style="font-size:11px;color:#aaa">${dateStr}</span>` : ''}
               </div>
@@ -165,27 +165,27 @@ async function downloadSelected(view) {
     progress.style.display = 'block';
 
     for (const r of selected) {
-        statusEl.textContent = `Downloading: ${r.ReleaseName} (${r.LanguageName})…`;
+        statusEl.textContent = `Downloading: ${r.releaseName} (${r.languageName})…`;
         try {
             const res = await ApiClient.ajax({
                 type: 'POST',
                 url: ApiClient.getUrl(`${API}/download`),
                 data: JSON.stringify({
-                    ItemId:       currentItemId,
-                    SourceId:     r.SourceId,
-                    SubtitleId:   r.Id,
-                    DownloadUrl:  r.DownloadUrl,
-                    Language:     r.Language,
-                    ReleaseName:  r.ReleaseName,
-                    Uploader:     r.Uploader,
-                    ReleaseGroup: r.ReleaseGroup,
+                    itemId:       currentItemId,
+                    sourceId:     r.sourceId,
+                    subtitleId:   r.id,
+                    downloadUrl:  r.downloadUrl,
+                    language:     r.language,
+                    releaseName:  r.releaseName,
+                    uploader:     r.uploader,
+                    releaseGroup: r.releaseGroup,
                 }),
                 contentType: 'application/json',
             });
-            if (res.Success) {
-                statusEl.textContent = `✓ Saved: ${res.SavedPath}`;
+            if (res.success) {
+                statusEl.textContent = `✓ Saved: ${res.savedPath}`;
             } else {
-                statusEl.textContent = `✗ Failed: ${res.Error}`;
+                statusEl.textContent = `✗ Failed: ${res.error}`;
             }
         } catch (ex) {
             statusEl.textContent = `✗ Error: ${ex}`;
