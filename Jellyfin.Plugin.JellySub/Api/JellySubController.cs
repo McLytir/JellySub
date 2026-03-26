@@ -203,7 +203,7 @@ public sealed class JellySubController : ControllerBase
             return NotFound();
         }
 
-        var episodes = GetEpisodes(item);
+        var episodes = GetMediaItems(item);
         var language = string.IsNullOrWhiteSpace(dto.Language)
             ? Plugin.Instance!.Configuration.PreferredLanguages.FirstOrDefault() ?? "en"
             : dto.Language;
@@ -211,10 +211,10 @@ public sealed class JellySubController : ControllerBase
         var entries = episodes.Select(ep => new EpisodeEntryDto
         {
             ItemId        = ep.Id.ToString(),
-            Label         = $"S{ep.ParentIndexNumber:00}E{ep.IndexNumber:00} – {ep.Name}",
-            SeasonNumber  = ep.ParentIndexNumber ?? 0,
-            EpisodeNumber = ep.IndexNumber ?? 0,
-            HasSubtitle   = SubtitleFileService.SubtitleExists(ep.Path, language),
+            Label         = BuildMediaLabel(ep),
+            SeasonNumber  = ep is Episode episode ? episode.ParentIndexNumber ?? 0 : 0,
+            EpisodeNumber = ep is Episode episode2 ? episode2.IndexNumber ?? 0 : 0,
+            HasSubtitle   = SubtitleFileService.SubtitleExists(ep.Path!, language),
         }).ToList();
 
         return Ok(new SeriesAnalysisDto
@@ -238,24 +238,29 @@ public sealed class JellySubController : ControllerBase
         if (seriesItem is null) return NotFound();
 
         var language = dto.Language;
-        var episodes = GetEpisodes(seriesItem);
+        var episodes = GetMediaItems(seriesItem);
 
         var entries = episodes.Select((ep, idx) => new EpisodeSubtitleEntry
         {
             ItemId        = ep.Id.ToString(),
-            Label         = $"S{ep.ParentIndexNumber:00}E{ep.IndexNumber:00} – {ep.Name}",
-            MediaPath     = ep.Path,
-            SeasonNumber  = ep.ParentIndexNumber ?? 0,
-            EpisodeNumber = ep.IndexNumber ?? 0,
-            AlreadyHasSubtitle = SubtitleFileService.SubtitleExists(ep.Path, language),
-            // Ep1 is pre-assigned
-            ChosenSubtitle = idx == 0 ? DtoToResult(dto.Anchor) : null,
-            MatchMethod    = idx == 0 ? "Manual" : string.Empty,
+            Label         = BuildMediaLabel(ep),
+            MediaPath     = ep.Path!,
+            SearchTitle   = ep.Name,
+            SeriesTitle   = ep is Episode episode ? episode.SeriesName : null,
+            SeasonNumber  = ep is Episode episode2 ? episode2.ParentIndexNumber ?? 0 : 0,
+            EpisodeNumber = ep is Episode episode3 ? episode3.IndexNumber ?? 0 : 0,
+            AlreadyHasSubtitle = SubtitleFileService.SubtitleExists(ep.Path!, language),
+            ChosenSubtitle = ep.Id.ToString().Equals(dto.AnchorItemId, StringComparison.OrdinalIgnoreCase)
+                ? DtoToResult(dto.Anchor)
+                : null,
+            MatchMethod    = ep.Id.ToString().Equals(dto.AnchorItemId, StringComparison.OrdinalIgnoreCase)
+                ? "Manual"
+                : string.Empty,
         }).ToList();
 
         var anchor = DtoToResult(dto.Anchor);
         await _seriesMatcher
-            .MatchEpisodesAsync(entries, anchor, language, seriesItem.Name, cancellationToken)
+            .MatchEpisodesAsync(entries, anchor, language, cancellationToken)
             .ConfigureAwait(false);
 
         return Ok(new SeriesAnalysisDto
@@ -525,35 +530,45 @@ public sealed class JellySubController : ControllerBase
         return req;
     }
 
-    private List<Episode> GetEpisodes(BaseItem seriesItem)
+    private List<BaseItem> GetMediaItems(BaseItem rootItem)
     {
         var query = new InternalItemsQuery
         {
-            IncludeItemTypes = new[] { BaseItemKind.Episode },
+            IncludeItemTypes = new[] { BaseItemKind.Movie, BaseItemKind.Episode, BaseItemKind.Video },
             IsVirtualItem    = false,
             Recursive        = true,
+            AncestorIds      = new[] { rootItem.Id },
         };
 
-        if (seriesItem is Series series)
+        var items = _libraryManager
+            .GetItemList(query)
+            .Where(i => !string.IsNullOrEmpty(i.Path))
+            .ToList();
+
+        if (!string.IsNullOrEmpty(rootItem.Path) &&
+            rootItem is not Folder &&
+            items.All(i => i.Id != rootItem.Id))
         {
-            query.AncestorIds = new[] { series.Id };
-        }
-        else if (seriesItem is Season season)
-        {
-            query.AncestorIds = new[] { season.Id };
-        }
-        else
-        {
-            query.AncestorIds = new[] { seriesItem.Id };
+            items.Add(rootItem);
         }
 
-        return _libraryManager
-            .GetItemList(query)
-            .OfType<Episode>()
-            .Where(e => !string.IsNullOrEmpty(e.Path))
-            .OrderBy(e => e.ParentIndexNumber)
-            .ThenBy(e => e.IndexNumber)
+        return items
+            .OrderBy(i => i is Episode ep ? 0 : 1)
+            .ThenBy(i => i is Episode ep ? ep.ParentIndexNumber ?? 0 : 0)
+            .ThenBy(i => i is Episode ep ? ep.IndexNumber ?? 0 : 0)
+            .ThenBy(i => i.Path)
+            .ThenBy(i => i.Name)
             .ToList();
+    }
+
+    private static string BuildMediaLabel(BaseItem item)
+    {
+        if (item is Episode ep)
+        {
+            return $"S{ep.ParentIndexNumber:00}E{ep.IndexNumber:00} – {ep.Name}";
+        }
+
+        return item.Name;
     }
 
     private static List<string> ParseLanguages(string? raw)

@@ -154,7 +154,7 @@ async function runGuidedMatch(view, ep1, lang) {
         const data = await ApiClient.ajax({
             type: 'POST',
             url: ApiClient.getUrl(`${API}/series/match`),
-            data: JSON.stringify({ SeriesItemId: seriesItemId, Language: lang, Anchor: ep1Anchor }),
+            data: JSON.stringify({ SeriesItemId: seriesItemId, AnchorItemId: ep1.ItemId, Language: lang, Anchor: ep1Anchor }),
             contentType: 'application/json',
         });
         matchedEpisodes = data;

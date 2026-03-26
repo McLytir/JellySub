@@ -55,6 +55,9 @@ public sealed class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             // Library scan
             new PluginPageInfo { Name = "jellysubscan",     EmbeddedResourcePath = $"{ns}.Web.scan.html"   },
             new PluginPageInfo { Name = "jellysubscanjs",   EmbeddedResourcePath = $"{ns}.Web.scan.js"     },
+
+            // Main-web client integration (item/library action buttons)
+            new PluginPageInfo { Name = "jellysubclientjs", EmbeddedResourcePath = $"{ns}.Web.client.js"   },
         };
     }
 }

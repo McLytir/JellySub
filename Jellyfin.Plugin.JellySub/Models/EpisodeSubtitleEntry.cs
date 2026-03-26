@@ -15,6 +15,12 @@ public sealed class EpisodeSubtitleEntry
     /// <summary>Absolute media file path on the server.</summary>
     public string MediaPath { get; set; } = string.Empty;
 
+    /// <summary>Search title for this media item.</summary>
+    public string SearchTitle { get; set; } = string.Empty;
+
+    /// <summary>Series title when this entry represents an episode.</summary>
+    public string? SeriesTitle { get; set; }
+
     /// <summary>Season number.</summary>
     public int SeasonNumber { get; set; }
 

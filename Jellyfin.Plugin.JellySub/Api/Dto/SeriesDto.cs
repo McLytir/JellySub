@@ -59,6 +59,7 @@ public sealed class EpisodeBatchItem
 public sealed class SeriesMatchRequestDto
 {
     public string SeriesItemId   { get; set; } = string.Empty;
+    public string AnchorItemId   { get; set; } = string.Empty;
     public string Language       { get; set; } = string.Empty;
     public SubtitleResultDto Anchor { get; set; } = new();
 }

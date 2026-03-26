@@ -38,7 +38,6 @@ public sealed class SeriesMatchingService
         IList<EpisodeSubtitleEntry> episodes,
         SubtitleResult anchorSubtitle,
         string language,
-        string seriesTitle,
         CancellationToken cancellationToken)
     {
         var anchorUploader = anchorSubtitle.Uploader;
@@ -52,12 +51,17 @@ public sealed class SeriesMatchingService
         {
             try
             {
+                var isEpisodeLike =
+                    episode.SeasonNumber > 0 &&
+                    episode.EpisodeNumber > 0 &&
+                    !string.IsNullOrWhiteSpace(episode.SeriesTitle);
+
                 var request = new SubtitleSearchRequest
                 {
-                    SeriesTitle   = seriesTitle,
-                    Title         = seriesTitle,
-                    SeasonNumber  = episode.SeasonNumber,
-                    EpisodeNumber = episode.EpisodeNumber,
+                    Title         = isEpisodeLike ? episode.SeriesTitle! : episode.SearchTitle,
+                    SeriesTitle   = isEpisodeLike ? episode.SeriesTitle : null,
+                    SeasonNumber  = isEpisodeLike ? episode.SeasonNumber : null,
+                    EpisodeNumber = isEpisodeLike ? episode.EpisodeNumber : null,
                     Languages     = new List<string> { language },
                     MediaFilePath = episode.MediaPath,
                 };
