@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/assets/logo.png",
     "versions": [
       {
+        "version": "1.0.1.0",
+        "changelog": "\n### Fixed\n- Fixed Jellyfin page routing for JellySub pages so subtitle actions no longer land on the wrong page.\n- Fixed guided batch matching to use the actually selected anchor item instead of assuming the first list item.\n- Fixed series / folder batch analysis to work with folder-style selections and non-episode media items.\n- Added main Jellyfin UI action buttons for subtitle search, batch subtitle actions, and library-level scan access.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/McLytir/JellySub/releases/download/v1.0.1/jellysub_1.0.1.0.zip",
+        "checksum": "ba596194d0e42d48a438c570cd8ea9c2",
+        "timestamp": "2026-03-26T11:57:06Z"
+      },
+      {
         "version": "1.0.0.0",
         "changelog": "\n### Added\n- Initial release\n- Subtitle sources: OpenSubtitles.org, Subscene, YifySubtitles (no login required)\n- Configurable source priority and enable/disable per source\n- Assisted search — auto-search from Jellyfin item metadata, manual selection\n- Manual search — free-text query with season/episode filter\n- Series / folder batch download\n  - Auto mode — silent best-match per episode\n  - Guided mode — user picks ep 1 subtitle; plugin matches same uploader / release group for remaining episodes\n- Player test — VLC command + XSPF playlist download before committing a series batch\n- Manual re-sync trigger (ffsubsync or alass) after player test\n- Library scan — on-demand or scheduled, with filterable results log\n- Sync tool integration: install ffsubsync (pip) and alass (GitHub binary) from settings UI\n- Auto-sync after download option\n- Language mapping: 35 languages with BCP-47 ↔ ISO 639-2/B ↔ display name conversion\n- Full Jellyfin plugin repository support (`manifest.json`)",
         "targetAbi": "10.10.0.0",
