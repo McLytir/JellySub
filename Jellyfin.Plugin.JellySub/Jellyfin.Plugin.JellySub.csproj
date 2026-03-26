@@ -33,8 +33,10 @@
   <ItemGroup>
     <EmbeddedResource Include="Web/*.html" />
     <EmbeddedResource Include="Web/*.js"   />
+    <EmbeddedResource Include="WebClient/*.js" />
     <None            Remove="Web/*.html"   />
     <None            Remove="Web/*.js"     />
+    <None            Remove="WebClient/*.js" />
   </ItemGroup>
 
 </Project>

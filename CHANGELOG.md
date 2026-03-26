@@ -5,6 +5,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.4] – 2026-03-26
+
+### Added
+- Added downloadable JellySub web-client install scripts for Linux, macOS, and Windows.
+- Added plugin settings UI for downloading those scripts and attempting automatic installation into default Jellyfin web roots.
+- Added embedded JellySub web-client plugin asset so the server plugin can patch local Jellyfin web roots directly.
+
+### Improved
+- Added web-client integration status reporting in the JellySub settings page.
+- Improved instructions for default vs custom Jellyfin web installations.
+
 ## [v1.0.3] – 2026-03-26
 
 ### Fixed

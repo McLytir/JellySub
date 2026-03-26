@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Mime;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.JellySub.Api.Dto;
@@ -486,6 +489,91 @@ public sealed class JellySubController : ControllerBase
     public IActionResult GetConfig()
         => Ok(Plugin.Instance!.Configuration);
 
+    [HttpGet("webclient/status")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult WebClientStatus()
+    {
+        var candidates = GetDefaultWebRoots().ToList();
+        var patched = candidates.Where(IsWebClientPatched).ToList();
+        return Ok(new
+        {
+            Platform = CurrentPlatform(),
+            CandidateRoots = candidates,
+            PatchedRoots = patched,
+        });
+    }
+
+    [HttpGet("webclient/script")]
+    [Authorize(Policy = "RequiresElevation")]
+    public IActionResult DownloadWebClientScript([FromQuery] string platform)
+    {
+        var normalized = (platform ?? string.Empty).Trim().ToLowerInvariant();
+        var content = normalized switch
+        {
+            "linux" => BuildLinuxInstallerScript(),
+            "mac" or "macos" or "osx" => BuildMacInstallerScript(),
+            "win" or "windows" => BuildWindowsInstallerScript(),
+            _ => throw new ArgumentException("Unknown platform. Use linux, macos, or windows."),
+        };
+
+        var fileName = normalized switch
+        {
+            "linux" => "install-jellysub-web-client-linux.sh",
+            "mac" or "macos" or "osx" => "install-jellysub-web-client-macos.sh",
+            _ => "install-jellysub-web-client-windows.ps1",
+        };
+
+        return File(Encoding.UTF8.GetBytes(content), "application/octet-stream", fileName);
+    }
+
+    [HttpPost("webclient/install-defaults")]
+    [Authorize(Policy = "RequiresElevation")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult InstallWebClientDefaults()
+    {
+        var results = new List<WebClientInstallResult>();
+        var pluginScript = GetEmbeddedText("WebClient.jellysub-context-plugin.js");
+
+        foreach (var root in GetDefaultWebRoots())
+        {
+            try
+            {
+                if (!Directory.Exists(root))
+                {
+                    results.Add(new WebClientInstallResult { Path = root, Status = "Skipped", Message = "Path not found" });
+                    continue;
+                }
+
+                var indexPath = Path.Combine(root, "index.html");
+                var configPath = Path.Combine(root, "config.json");
+                if (!System.IO.File.Exists(indexPath) || !System.IO.File.Exists(configPath))
+                {
+                    results.Add(new WebClientInstallResult { Path = root, Status = "Skipped", Message = "Missing index.html or config.json" });
+                    continue;
+                }
+
+                System.IO.File.WriteAllText(Path.Combine(root, "jellysub-context-plugin.js"), pluginScript);
+                PatchIndexHtml(indexPath);
+                PatchConfigJson(configPath);
+                results.Add(new WebClientInstallResult { Path = root, Status = "Patched", Message = "Installed JellySub web-client plugin" });
+            }
+            catch (Exception ex)
+            {
+                results.Add(new WebClientInstallResult { Path = root, Status = "Failed", Message = ex.Message });
+            }
+        }
+
+        var patchedCount = results.Count(r => r.Status == "Patched");
+        return Ok(new
+        {
+            Success = patchedCount > 0,
+            Message = patchedCount > 0
+                ? $"Patched {patchedCount} default Jellyfin web root(s). Restart Jellyfin / Jellyfin Desktop and clear cache."
+                : "No default Jellyfin web root could be patched automatically. Download the platform script and run it manually on the machine hosting the Jellyfin web files.",
+            Results = results,
+        });
+    }
+
     /// <summary>Save plugin configuration.</summary>
     [HttpPost("config")]
     [Authorize(Policy = "RequiresElevation")]
@@ -577,6 +665,218 @@ public sealed class JellySubController : ControllerBase
         return raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
     }
 
+    private static string CurrentPlatform()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return "Windows";
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return "macOS";
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) return "Linux";
+        return RuntimeInformation.OSDescription;
+    }
+
+    private static IEnumerable<string> GetDefaultWebRoots()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            return new[]
+            {
+                @"C:\Program Files\Jellyfin\Server\jellyfin-web",
+                @"C:\Program Files\Jellyfin\jellyfin-web",
+                Path.Combine(localAppData, @"Programs\Jellyfin\resources\jellyfin-web"),
+                Path.Combine(localAppData, @"Programs\Jellyfin Desktop\resources\jellyfin-web"),
+            };
+        }
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            return new[]
+            {
+                "/Applications/Jellyfin.app/Contents/Resources/jellyfin-web",
+                "/Applications/Jellyfin Desktop.app/Contents/Resources/jellyfin-web",
+                Path.Combine(home, "Applications/Jellyfin.app/Contents/Resources/jellyfin-web"),
+                Path.Combine(home, "Applications/Jellyfin Desktop.app/Contents/Resources/jellyfin-web"),
+            };
+        }
+
+        return new[]
+        {
+            "/usr/share/jellyfin/web",
+            "/var/lib/jellyfin/web",
+            "/opt/jellyfin-web",
+        };
+    }
+
+    private static bool IsWebClientPatched(string root)
+    {
+        var pluginPath = Path.Combine(root, "jellysub-context-plugin.js");
+        var indexPath = Path.Combine(root, "index.html");
+        var configPath = Path.Combine(root, "config.json");
+        if (!System.IO.File.Exists(pluginPath) || !System.IO.File.Exists(indexPath) || !System.IO.File.Exists(configPath))
+        {
+            return false;
+        }
+
+        var indexText = System.IO.File.ReadAllText(indexPath);
+        var configText = System.IO.File.ReadAllText(configPath);
+        return indexText.Contains("jellysub-context-plugin.js", StringComparison.OrdinalIgnoreCase)
+            && configText.Contains("jellysubContext", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string GetEmbeddedText(string suffix)
+    {
+        var asm = typeof(Plugin).Assembly;
+        var resourceName = asm.GetManifestResourceNames()
+            .FirstOrDefault(n => n.EndsWith(suffix, StringComparison.Ordinal));
+        if (resourceName is null)
+        {
+            throw new FileNotFoundException($"Embedded resource not found: {suffix}");
+        }
+
+        using var stream = asm.GetManifestResourceStream(resourceName)
+            ?? throw new FileNotFoundException($"Could not open resource: {resourceName}");
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        return reader.ReadToEnd();
+    }
+
+    private static void PatchIndexHtml(string indexPath)
+    {
+        var text = System.IO.File.ReadAllText(indexPath);
+        if (text.Contains("jellysub-context-plugin.js", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        const string tag = "    <script src=\"jellysub-context-plugin.js\"></script>\n";
+        text = text.Contains("</body>", StringComparison.OrdinalIgnoreCase)
+            ? text.Replace("</body>", tag + "</body>", StringComparison.OrdinalIgnoreCase)
+            : text.Replace("</head>", tag + "</head>", StringComparison.OrdinalIgnoreCase);
+
+        System.IO.File.WriteAllText(indexPath, text);
+    }
+
+    private static void PatchConfigJson(string configPath)
+    {
+        var json = JsonNode.Parse(System.IO.File.ReadAllText(configPath))?.AsObject()
+            ?? new JsonObject();
+        var plugins = json["plugins"] as JsonArray ?? new JsonArray();
+        if (json["plugins"] is null)
+        {
+            json["plugins"] = plugins;
+        }
+
+        if (!plugins.Any(p => string.Equals(p?.GetValue<string>(), "jellysubContext", StringComparison.OrdinalIgnoreCase)))
+        {
+            plugins.Add("jellysubContext");
+        }
+
+        System.IO.File.WriteAllText(configPath, json.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    private static string BuildLinuxInstallerScript() => "#!/usr/bin/env bash\n" +
+        "set -euo pipefail\n\n" +
+        "PLUGIN_URL=\"https://raw.githubusercontent.com/McLytir/JellySub/main/web-client/jellysub-context-plugin.js\"\n" +
+        "CANDIDATES=(\n" +
+        "  \"/usr/share/jellyfin/web\"\n" +
+        "  \"/var/lib/jellyfin/web\"\n" +
+        "  \"/opt/jellyfin-web\"\n" +
+        ")\n\n" +
+        "patch_root() {\n" +
+        "  local root=\"$1\"\n" +
+        "  local plugin=\"$root/jellysub-context-plugin.js\"\n" +
+        "  local index=\"$root/index.html\"\n" +
+        "  local config=\"$root/config.json\"\n" +
+        "  [[ -f \"$index\" && -f \"$config\" ]] || return 1\n" +
+        "  curl -fsSL \"$PLUGIN_URL\" -o \"$plugin\"\n" +
+        "  grep -q 'jellysub-context-plugin.js' \"$index\" || python3 - <<PY\n" +
+        "from pathlib import Path\n" +
+        "p = Path(r'''$index''')\n" +
+        "text = p.read_text(encoding='utf-8')\n" +
+        "text = text.replace('</body>', '    <script src=\\\"jellysub-context-plugin.js\\\"></script>\\n</body>', 1) if '</body>' in text else text.replace('</head>', '    <script src=\\\"jellysub-context-plugin.js\\\"></script>\\n</head>', 1)\n" +
+        "p.write_text(text, encoding='utf-8')\n" +
+        "PY\n" +
+        "  python3 - <<PY\n" +
+        "import json\nfrom pathlib import Path\n" +
+        "p = Path(r'''$config''')\n" +
+        "data = json.loads(p.read_text(encoding='utf-8'))\n" +
+        "plugins = data.setdefault('plugins', [])\n" +
+        "if 'jellysubContext' not in plugins: plugins.append('jellysubContext')\n" +
+        "p.write_text(json.dumps(data, indent=2) + '\\n', encoding='utf-8')\n" +
+        "PY\n" +
+        "  echo \"Patched: $root\"\n" +
+        "}\n\n" +
+        "found=0\nfor root in \"${CANDIDATES[@]}\"; do\n  if patch_root \"$root\"; then found=1; fi\ndone\n" +
+        "if [[ \"$found\" -eq 0 ]]; then echo \"No default Jellyfin web root found. Edit CANDIDATES in this script for a custom install.\"; exit 1; fi\n" +
+        "echo \"Done. Restart Jellyfin / clear browser cache.\"\n";
+
+    private static string BuildMacInstallerScript() => "#!/usr/bin/env bash\n" +
+        "set -euo pipefail\n\n" +
+        "PLUGIN_URL=\"https://raw.githubusercontent.com/McLytir/JellySub/main/web-client/jellysub-context-plugin.js\"\n" +
+        "CANDIDATES=(\n" +
+        "  \"/Applications/Jellyfin.app/Contents/Resources/jellyfin-web\"\n" +
+        "  \"/Applications/Jellyfin Desktop.app/Contents/Resources/jellyfin-web\"\n" +
+        "  \"$HOME/Applications/Jellyfin.app/Contents/Resources/jellyfin-web\"\n" +
+        "  \"$HOME/Applications/Jellyfin Desktop.app/Contents/Resources/jellyfin-web\"\n" +
+        ")\n\n" +
+        "patch_root() {\n" +
+        "  local root=\"$1\"\n" +
+        "  local plugin=\"$root/jellysub-context-plugin.js\"\n" +
+        "  local index=\"$root/index.html\"\n" +
+        "  local config=\"$root/config.json\"\n" +
+        "  [[ -f \"$index\" && -f \"$config\" ]] || return 1\n" +
+        "  curl -fsSL \"$PLUGIN_URL\" -o \"$plugin\"\n" +
+        "  grep -q 'jellysub-context-plugin.js' \"$index\" || python3 - <<PY\n" +
+        "from pathlib import Path\n" +
+        "p = Path(r'''$index''')\n" +
+        "text = p.read_text(encoding='utf-8')\n" +
+        "text = text.replace('</body>', '    <script src=\\\"jellysub-context-plugin.js\\\"></script>\\n</body>', 1) if '</body>' in text else text.replace('</head>', '    <script src=\\\"jellysub-context-plugin.js\\\"></script>\\n</head>', 1)\n" +
+        "p.write_text(text, encoding='utf-8')\n" +
+        "PY\n" +
+        "  python3 - <<PY\n" +
+        "import json\nfrom pathlib import Path\n" +
+        "p = Path(r'''$config''')\n" +
+        "data = json.loads(p.read_text(encoding='utf-8'))\n" +
+        "plugins = data.setdefault('plugins', [])\n" +
+        "if 'jellysubContext' not in plugins: plugins.append('jellysubContext')\n" +
+        "p.write_text(json.dumps(data, indent=2) + '\\n', encoding='utf-8')\n" +
+        "PY\n" +
+        "  echo \"Patched: $root\"\n" +
+        "}\n\n" +
+        "found=0\nfor root in \"${CANDIDATES[@]}\"; do\n  if patch_root \"$root\"; then found=1; fi\ndone\n" +
+        "if [[ \"$found\" -eq 0 ]]; then echo \"No default Jellyfin web root found. Edit CANDIDATES in this script for a custom install.\"; exit 1; fi\n" +
+        "echo \"Done. Restart Jellyfin / Jellyfin Desktop and clear browser cache.\"\n";
+
+    private static string BuildWindowsInstallerScript() =>
+        "$ErrorActionPreference = 'Stop'\r\n\r\n" +
+        "$pluginUrl = 'https://raw.githubusercontent.com/McLytir/JellySub/main/web-client/jellysub-context-plugin.js'\r\n" +
+        "$candidates = @(\r\n" +
+        "  'C:\\Program Files\\Jellyfin\\Server\\jellyfin-web',\r\n" +
+        "  'C:\\Program Files\\Jellyfin\\jellyfin-web',\r\n" +
+        "  \"$env:LOCALAPPDATA\\Programs\\Jellyfin\\resources\\jellyfin-web\",\r\n" +
+        "  \"$env:LOCALAPPDATA\\Programs\\Jellyfin Desktop\\resources\\jellyfin-web\"\r\n" +
+        ")\r\n\r\n" +
+        "function Patch-Root([string]$root) {\r\n" +
+        "  $index = Join-Path $root 'index.html'\r\n" +
+        "  $config = Join-Path $root 'config.json'\r\n" +
+        "  $plugin = Join-Path $root 'jellysub-context-plugin.js'\r\n" +
+        "  if (!(Test-Path $index) -or !(Test-Path $config)) { return $false }\r\n" +
+        "  Invoke-WebRequest -Uri $pluginUrl -OutFile $plugin\r\n" +
+        "  $indexText = Get-Content $index -Raw\r\n" +
+        "  if ($indexText -notmatch 'jellysub-context-plugin.js') {\r\n" +
+        "    if ($indexText.Contains('</body>')) { $indexText = $indexText.Replace('</body>', \"    <script src=`\"jellysub-context-plugin.js`\"></script>`r`n</body>\") }\r\n" +
+        "    else { $indexText = $indexText.Replace('</head>', \"    <script src=`\"jellysub-context-plugin.js`\"></script>`r`n</head>\") }\r\n" +
+        "    Set-Content -Path $index -Value $indexText -Encoding UTF8\r\n" +
+        "  }\r\n" +
+        "  $json = Get-Content $config -Raw | ConvertFrom-Json\r\n" +
+        "  if ($null -eq $json.plugins) { $json | Add-Member -NotePropertyName plugins -NotePropertyValue @() }\r\n" +
+        "  if ($json.plugins -notcontains 'jellysubContext') { $json.plugins += 'jellysubContext'; $json | ConvertTo-Json -Depth 16 | Set-Content -Path $config -Encoding UTF8 }\r\n" +
+        "  Write-Host \"Patched: $root\"\r\n" +
+        "  return $true\r\n" +
+        "}\r\n\r\n" +
+        "$patched = $false\r\nforeach ($root in $candidates) { if (Patch-Root $root) { $patched = $true } }\r\n" +
+        "if (-not $patched) { Write-Host 'No default Jellyfin web root found. Edit $candidates in this script for a custom install.'; exit 1 }\r\n" +
+        "Write-Host 'Done. Restart Jellyfin / Jellyfin Desktop and clear browser cache.'\r\n";
+
     private string SourceName(string sourceId)
         => _sources.FirstOrDefault(s => s.Id == sourceId)?.DisplayName ?? sourceId;
 
@@ -614,6 +914,13 @@ public sealed class JellySubController : ControllerBase
               </trackList>
             </playlist>
             """;
+    }
+
+    private sealed class WebClientInstallResult
+    {
+        public string Path { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string? Message { get; set; }
     }
 
     private async Task AutoSync(

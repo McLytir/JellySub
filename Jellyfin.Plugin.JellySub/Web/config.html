@@ -119,6 +119,30 @@
           </div>
         </div>
 
+        <!-- ── Web / Desktop Client Integration ────────────────────────── -->
+        <div class="verticalSection">
+          <h3 class="sectionTitle">Web / Desktop Client Integration</h3>
+          <p class="fieldDescription">
+            To add JellySub actions to the main Jellyfin browser/Desktop interface, install the
+            JellySub web-client patch into the Jellyfin web root. You can try the automatic installer
+            below for default server paths, or download a platform script and run it manually.
+          </p>
+          <p class="fieldDescription" style="margin-top:6px">
+            If the automatic installer cannot patch your setup, download the script for your platform,
+            run it on the machine that hosts the Jellyfin web files, then restart Jellyfin or Jellyfin Desktop
+            and clear the client cache.
+          </p>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+            <button is="emby-button" type="button" class="raised" id="btnWebClientInstall">Run auto-install on this server</button>
+            <button is="emby-button" type="button" class="raised button-alt" id="btnDownloadLinux">Download Linux script</button>
+            <button is="emby-button" type="button" class="raised button-alt" id="btnDownloadMac">Download macOS script</button>
+            <button is="emby-button" type="button" class="raised button-alt" id="btnDownloadWindows">Download Windows script</button>
+          </div>
+
+          <div id="webClientStatus" style="margin-top:12px;font-size:13px;color:#aaa"></div>
+        </div>
+
         <!-- ── Save ─────────────────────────────────────────────────────── -->
         <div>
           <p id="saveStatus" style="color:#4CAF50; display:none; margin-bottom:8px">

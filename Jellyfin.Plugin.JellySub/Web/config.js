@@ -14,6 +14,11 @@ export default function (view) {
     view.querySelector('#navSeries').addEventListener('click', () => navigateTo('configurationpage?name=jellysubseries'));
     view.querySelector('#navScan').addEventListener('click', () => navigateTo('configurationpage?name=jellysubscan'));
 
+    view.querySelector('#btnWebClientInstall').addEventListener('click', () => installWebClient(view));
+    view.querySelector('#btnDownloadLinux').addEventListener('click', () => downloadScript('linux'));
+    view.querySelector('#btnDownloadMac').addEventListener('click', () => downloadScript('macos'));
+    view.querySelector('#btnDownloadWindows').addEventListener('click', () => downloadScript('windows'));
+
     // ── Load ──────────────────────────────────────────────────────────────
     view.addEventListener('viewshow', async () => {
         Dashboard.showLoadingMsg();
@@ -22,6 +27,7 @@ export default function (view) {
             config = res;
             populateForm(view, config);
             await loadSyncTools(view);
+            await loadWebClientStatus(view);
         } catch (e) {
             Dashboard.processErrorResponse({ statusText: 'Failed to load config: ' + e });
         } finally {
@@ -176,6 +182,49 @@ function navigateTo(url) {
 
     window.location.href = '/' + url;
 }
+
+function downloadScript(platform) {
+    window.open(ApiClient.getUrl(`${API}/webclient/script`, { platform }), '_blank');
+}
+
+async function loadWebClientStatus(view) {
+    const el = view.querySelector('#webClientStatus');
+    try {
+        const data = await ApiClient.ajax({ type: 'GET', url: ApiClient.getUrl(`${API}/webclient/status`) });
+        const installed = data.PatchedRoots?.length || 0;
+        const candidates = data.CandidateRoots?.length || 0;
+        const roots = (data.CandidateRoots || []).map(r => `<li><code>${escHtml(r)}</code></li>`).join('');
+        el.innerHTML = `
+            <div><strong>Detected OS:</strong> ${escHtml(data.Platform || 'unknown')}</div>
+            <div style="margin-top:4px"><strong>Default web roots checked:</strong> ${candidates}</div>
+            <div style="margin-top:4px"><strong>Already patched:</strong> ${installed}</div>
+            ${roots ? `<details style="margin-top:8px"><summary>Show checked paths</summary><ul style="margin:8px 0 0 18px">${roots}</ul></details>` : ''}
+        `;
+    } catch (e) {
+        el.textContent = 'Could not load web-client integration status: ' + e;
+    }
+}
+
+async function installWebClient(view) {
+    const el = view.querySelector('#webClientStatus');
+    Dashboard.showLoadingMsg();
+    try {
+        const res = await ApiClient.ajax({
+            type: 'POST',
+            url: ApiClient.getUrl(`${API}/webclient/install-defaults`),
+        });
+        const ok = res.Success ? '✓' : '✗';
+        const details = (res.Results || []).map(r => `${r.Path}: ${r.Status}${r.Message ? ' — ' + r.Message : ''}`).join('\n');
+        Dashboard.alert(`${ok} ${res.Message}${details ? `\n\n${details}` : ''}`);
+        await loadWebClientStatus(view);
+    } catch (e) {
+        Dashboard.alert('Web-client install failed: ' + e);
+    } finally {
+        Dashboard.hideLoadingMsg();
+    }
+}
+
+const escHtml = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 async function loadSyncTools(view) {
     const section = view.querySelector('#syncToolsSection');
