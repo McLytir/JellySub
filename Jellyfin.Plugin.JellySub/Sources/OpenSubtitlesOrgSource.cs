@@ -324,9 +324,12 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
     private static string NormalizeImdbId(string imdbId)
     {
         var trimmed = imdbId.Trim();
-        return trimmed.StartsWith("tt", StringComparison.OrdinalIgnoreCase)
-            ? trimmed.ToLowerInvariant()
-            : $"tt{trimmed.TrimStart('t').TrimStart('T')}";
+        var numeric = trimmed.StartsWith("tt", StringComparison.OrdinalIgnoreCase)
+            ? trimmed[2..]
+            : trimmed;
+
+        // OpenSubtitles REST expects the numeric IMDb id (e.g. 3881914), not the tt-prefixed form.
+        return new string(numeric.Where(char.IsDigit).ToArray());
     }
 
     private static string ExtractReleaseGroup(string releaseName)
