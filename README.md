@@ -1,7 +1,7 @@
 # JellySub
 
 > **No-login subtitle downloader for Jellyfin.**  
-> Scrapes OpenSubtitles.org, Subscene, and YifySubtitles — no account needed.
+> Uses the OpenSubtitles API, Subscene, and YifySubtitles — no account needed.
 
 [![Build](https://github.com/McLytir/JellySub/actions/workflows/build.yml/badge.svg)](https://github.com/McLytir/JellySub/actions/workflows/build.yml)
 [![Latest Release](https://img.shields.io/github/v/release/McLytir/JellySub)](https://github.com/McLytir/JellySub/releases/latest)
@@ -46,7 +46,7 @@
 | **Player test** | Before committing a batch, download ep 1's subtitle and get a VLC command / XSPF playlist to verify sync in your local player |
 | **Manual re-sync** | After the playtest, trigger ffsubsync or alass on the subtitle from inside Jellyfin |
 | **Library scan** | Scheduled or on-demand — finds every media file missing a subtitle for your configured language(s) and silently downloads the best match |
-| **Multi-source** | OpenSubtitles.org · Subscene · YifySubtitles. Enable, disable and re-order by priority in settings |
+| **Multi-source** | OpenSubtitles.org (public API) · Subscene · YifySubtitles. Enable, disable and re-order by priority in settings |
 | **Sync tool integration** | Download and invoke ffsubsync (audio-based) or alass (reference-subtitle) directly from the Jellyfin UI |
 | **No login required** | Every scraper works anonymously |
 
@@ -384,7 +384,7 @@ chmod +x /usr/local/bin/alass
 
 | Source | Best for | Notes |
 |---|---|---|
-| **OpenSubtitles.org** | Movies + TV, all languages | Classic site — no account needed. Downloads come as zip archives. HTML structure may change; update the plugin if results stop appearing. |
+| **OpenSubtitles.org** | Movies + TV, all languages | Uses the public REST API, which avoids the classic site’s anti-bot challenge. Downloads are ZIP or GZip archives. |
 | **Subscene** | Movies + TV | May be blocked by Cloudflare bot protection on some server IPs. Disable in settings if it fails consistently. |
 | **YifySubtitles** | Movies | Indexed by IMDb ID, so it only works for content that has an IMDb ID in Jellyfin. Very reliable for movies. |
 

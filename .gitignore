@@ -91,3 +91,4 @@ env/
 *.patch
 .env
 .env.local
+.hermes/
