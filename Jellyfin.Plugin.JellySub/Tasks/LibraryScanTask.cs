@@ -94,7 +94,7 @@ public sealed class LibraryScanTask : IScheduledTask
             {
                 new TaskTriggerInfo
                 {
-                    Type = TaskTriggerInfoType.TriggerDaily,
+                    Type = TaskTriggerInfo.TriggerDaily,
                     TimeOfDayTicks = TimeSpan.FromHours(2).Ticks,
                 },
             },
@@ -102,7 +102,7 @@ public sealed class LibraryScanTask : IScheduledTask
             {
                 new TaskTriggerInfo
                 {
-                    Type = TaskTriggerInfoType.WeeklyTrigger,
+                    Type = TaskTriggerInfo.TriggerWeekly,
                     DayOfWeek = DayOfWeek.Sunday,
                     TimeOfDayTicks = TimeSpan.FromHours(2).Ticks,
                 },
