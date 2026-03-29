@@ -617,6 +617,13 @@ public sealed class JellySubController : ControllerBase
 
         // IMDb
         var imdb = item.GetProviderId(MediaBrowser.Model.Entities.MetadataProvider.Imdb);
+
+        if (string.IsNullOrEmpty(imdb) && item is Episode ep)
+        {
+            var parent = ep.GetParent();
+            imdb = parent?.GetProviderId(MediaBrowser.Model.Entities.MetadataProvider.Imdb);
+        }
+
         if (!string.IsNullOrEmpty(imdb)) req.ImdbId = imdb;
 
         if (item is Episode ep)

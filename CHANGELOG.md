@@ -5,6 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.12] – 2026-03-29
+
+### Fixed
+- Episode searches now inherit the parent series IMDb ID when the episode itself does not have one, which restores subtitle results for series like Blossoms Shanghai.
+- OpenSubtitles REST now normalizes IMDb IDs to the numeric form it expects, restoring subtitle results for series like Blossoms Shanghai.
+
 ## [v1.0.11] – 2026-03-29
 
 ### Fixed
