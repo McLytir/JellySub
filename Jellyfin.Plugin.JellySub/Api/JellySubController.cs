@@ -673,10 +673,21 @@ public sealed class JellySubController : ControllerBase
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
             return new[]
             {
                 @"C:\Program Files\Jellyfin\Server\jellyfin-web",
                 @"C:\Program Files\Jellyfin\jellyfin-web",
+                @"C:\Program Files\Jellyfin\Tray\resources\jellyfin-web",
+                @"C:\Program Files\Jellyfin\Tray\jellyfin-web",
+                @"C:\Program Files\Jellyfin\Media Player\resources\jellyfin-web",
+                @"C:\Program Files\Jellyfin\Media Player\jellyfin-web",
+                Path.Combine(programFiles, "Jellyfin", "Server", "jellyfin-web"),
+                Path.Combine(programFiles, "Jellyfin", "jellyfin-web"),
+                Path.Combine(programFiles, "Jellyfin", "Tray", "resources", "jellyfin-web"),
+                Path.Combine(programFiles, "Jellyfin", "Tray", "jellyfin-web"),
+                Path.Combine(programFiles, "Jellyfin", "Media Player", "resources", "jellyfin-web"),
+                Path.Combine(programFiles, "Jellyfin", "Media Player", "jellyfin-web"),
                 Path.Combine(localAppData, @"Programs\Jellyfin\resources\jellyfin-web"),
                 Path.Combine(localAppData, @"Programs\Jellyfin Desktop\resources\jellyfin-web"),
             };
@@ -921,6 +932,10 @@ public sealed class JellySubController : ControllerBase
         "$candidates = @(\r\n" +
         "  'C:\\Program Files\\Jellyfin\\Server\\jellyfin-web',\r\n" +
         "  'C:\\Program Files\\Jellyfin\\jellyfin-web',\r\n" +
+        "  'C:\\Program Files\\Jellyfin\\Tray\\resources\\jellyfin-web',\r\n" +
+        "  'C:\\Program Files\\Jellyfin\\Tray\\jellyfin-web',\r\n" +
+        "  'C:\\Program Files\\Jellyfin\\Media Player\\resources\\jellyfin-web',\r\n" +
+        "  'C:\\Program Files\\Jellyfin\\Media Player\\jellyfin-web',\r\n" +
         "  \"$env:LOCALAPPDATA\\Programs\\Jellyfin\\resources\\jellyfin-web\",\r\n" +
         "  \"$env:LOCALAPPDATA\\Programs\\Jellyfin Desktop\\resources\\jellyfin-web\"\r\n" +
         ")\r\n\r\n" +
@@ -963,6 +978,10 @@ public sealed class JellySubController : ControllerBase
         "$candidates = @(\r\n" +
         "  'C:\\Program Files\\Jellyfin\\Server\\jellyfin-web',\r\n" +
         "  'C:\\Program Files\\Jellyfin\\jellyfin-web',\r\n" +
+        "  'C:\\Program Files\\Jellyfin\\Tray\\resources\\jellyfin-web',\r\n" +
+        "  'C:\\Program Files\\Jellyfin\\Tray\\jellyfin-web',\r\n" +
+        "  'C:\\Program Files\\Jellyfin\\Media Player\\resources\\jellyfin-web',\r\n" +
+        "  'C:\\Program Files\\Jellyfin\\Media Player\\jellyfin-web',\r\n" +
         "  \"$env:LOCALAPPDATA\\Programs\\Jellyfin\\resources\\jellyfin-web\",\r\n" +
         "  \"$env:LOCALAPPDATA\\Programs\\Jellyfin Desktop\\resources\\jellyfin-web\"\r\n" +
         ")\r\n\r\n" +
