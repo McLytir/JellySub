@@ -5,6 +5,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.10] – 2026-03-29
+
+### Fixed
+- OpenSubtitles search now uses the public REST API instead of scraping the classic site, which avoids the anti-bot block.
+- Search UI now shows the resolved media title and year instead of the raw Jellyfin item ID.
+- Added YIFY title-to-IMDb fallback so movie searches can work even when the item does not already carry an IMDb ID.
+
 ## [v1.0.9] – 2026-03-29
 
 ### Fixed
