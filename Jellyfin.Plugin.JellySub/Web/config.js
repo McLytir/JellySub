@@ -190,8 +190,40 @@ function navigateTo(url) {
     window.location.href = '/' + url;
 }
 
-function downloadScript(platform, mode) {
-    window.open(ApiClient.getUrl(`${API}/webclient/script`, { platform, mode }), '_blank');
+async function downloadScript(platform, mode) {
+    try {
+        const url = ApiClient.getUrl(`${API}/webclient/script`, { platform, mode });
+        const scriptText = await ApiClient.ajax({ type: 'GET', url, dataType: 'text' });
+        const blob = new Blob([scriptText], { type: 'text/plain;charset=utf-8' });
+        const objectUrl = URL.createObjectURL(blob);
+        const fileName = scriptFileName(platform, mode);
+
+        const a = document.createElement('a');
+        a.href = objectUrl;
+        a.download = fileName;
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    } catch (e) {
+        Dashboard.processErrorResponse({ statusText: 'Failed to download script: ' + e });
+    }
+}
+
+function scriptFileName(platform, mode) {
+    const uninstall = mode === 'uninstall';
+    switch (platform) {
+        case 'linux':
+            return uninstall ? 'uninstall-jellysub-web-client-linux.sh' : 'install-jellysub-web-client-linux.sh';
+        case 'macos':
+            return uninstall ? 'uninstall-jellysub-web-client-macos.sh' : 'install-jellysub-web-client-macos.sh';
+        case 'windows':
+            return uninstall ? 'uninstall-jellysub-web-client-windows.ps1' : 'install-jellysub-web-client-windows.ps1';
+        default:
+            return uninstall ? 'uninstall-jellysub-web-client.sh' : 'install-jellysub-web-client.sh';
+    }
 }
 
 async function loadWebClientStatus(view) {
