@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.7] – 2026-03-26
+
+### Fixed
+- Expanded Windows web-root detection and fixed web-client script downloads.
+
 ## [v1.0.6] – 2026-03-26
 
 ### Fixed
