@@ -7,6 +7,8 @@ namespace Jellyfin.Plugin.JellySub.Api.Dto;
 /// <summary>Search results returned to the web UI.</summary>
 public sealed class SearchResultDto
 {
+    public string? SearchTitle { get; set; }
+    public int? SearchYear { get; set; }
     public IReadOnlyList<SubtitleResultDto> Results { get; set; } = Array.Empty<SubtitleResultDto>();
     public string? Error { get; set; }
 }

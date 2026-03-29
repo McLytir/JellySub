@@ -83,7 +83,13 @@ public sealed class JellySubController : ControllerBase
     {
         try
         {
-            var request = itemId is not null
+            BaseItem? item = null;
+            if (!string.IsNullOrWhiteSpace(itemId))
+            {
+                item = _libraryManager.GetItemById(Guid.Parse(itemId));
+            }
+
+            var request = !string.IsNullOrWhiteSpace(itemId)
                 ? BuildRequestFromItem(itemId, languages)
                 : new SubtitleSearchRequest
                   {
@@ -94,8 +100,17 @@ public sealed class JellySubController : ControllerBase
                 .SearchAsync(request, cancellationToken)
                 .ConfigureAwait(false);
 
+            string? searchTitle = null;
+            int? searchYear = null;
+            if (item is not null)
+            {
+                (searchTitle, searchYear) = BuildSearchLabel(item);
+            }
+
             return Ok(new SearchResultDto
             {
+                SearchTitle = searchTitle,
+                SearchYear  = searchYear,
                 Results = results
                     .Select(r => SubtitleResultDto.From(r, SourceName(r.SourceId)))
                     .ToList()
@@ -133,6 +148,8 @@ public sealed class JellySubController : ControllerBase
 
         return Ok(new SearchResultDto
         {
+            SearchTitle = query,
+            SearchYear  = null,
             Results = results
                 .Select(r => SubtitleResultDto.From(r, SourceName(r.SourceId)))
                 .ToList()
@@ -652,6 +669,16 @@ public sealed class JellySubController : ControllerBase
         }
 
         return item.Name;
+    }
+
+    private static (string Title, int? Year) BuildSearchLabel(BaseItem item)
+    {
+        if (item is Episode ep && !string.IsNullOrWhiteSpace(ep.SeriesName))
+        {
+            return (ep.SeriesName, item.ProductionYear);
+        }
+
+        return (item.Name, item.ProductionYear);
     }
 
     private static List<string> ParseLanguages(string? raw)

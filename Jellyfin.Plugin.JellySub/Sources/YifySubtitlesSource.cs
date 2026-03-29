@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
@@ -61,15 +62,26 @@ public sealed class YifySubtitlesSource : ISubtitleSource
         SubtitleSearchRequest request,
         CancellationToken cancellationToken)
     {
-        // YifySubtitles only works for movies and requires an IMDb ID
-        if (string.IsNullOrWhiteSpace(request.ImdbId) || request.SeasonNumber.HasValue)
+        // YifySubtitles only works for movies.
+        if (request.SeasonNumber.HasValue)
         {
             return Array.Empty<SubtitleResult>();
         }
 
         try
         {
-            var imdbNumeric = request.ImdbId.TrimStart('t');
+            var imdbId = request.ImdbId;
+            if (string.IsNullOrWhiteSpace(imdbId))
+            {
+                imdbId = await ResolveImdbIdFromTitleAsync(request, cancellationToken).ConfigureAwait(false);
+            }
+
+            if (string.IsNullOrWhiteSpace(imdbId))
+            {
+                return Array.Empty<SubtitleResult>();
+            }
+
+            var imdbNumeric = imdbId.TrimStart('t');
             var url = $"{BaseUrl}/movie-imdb/tt{imdbNumeric}";
 
             _logger.LogDebug("[Yify] GET {Url}", url);
@@ -82,7 +94,7 @@ public sealed class YifySubtitlesSource : ISubtitleSource
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "[Yify] Search failed for IMDb {Id}", request.ImdbId);
+            _logger.LogWarning(ex, "[Yify] Search failed for '{Title}' / IMDb {Id}", request.Title, request.ImdbId);
             return Array.Empty<SubtitleResult>();
         }
     }
@@ -113,6 +125,78 @@ public sealed class YifySubtitlesSource : ISubtitleSource
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+
+    private async Task<string?> ResolveImdbIdFromTitleAsync(
+        SubtitleSearchRequest request,
+        CancellationToken cancellationToken)
+    {
+        var query = request.Title;
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return null;
+        }
+
+        var suggestions = await SearchMovieSuggestionsAsync(query, cancellationToken).ConfigureAwait(false);
+        if (suggestions.Count == 0)
+        {
+            return null;
+        }
+
+        var wantedTitle = NormalizeQuery(query);
+
+        if (request.Year.HasValue)
+        {
+            var yearText = request.Year.Value.ToString();
+            var yearMatch = suggestions.FirstOrDefault(s =>
+                s.Movie.Contains(yearText, StringComparison.OrdinalIgnoreCase) &&
+                NormalizeQuery(s.Movie).Contains(wantedTitle, StringComparison.OrdinalIgnoreCase));
+            if (yearMatch is not null)
+            {
+                return yearMatch.Imdb;
+            }
+        }
+
+        var exactMatch = suggestions.FirstOrDefault(s =>
+            NormalizeQuery(s.Movie).Contains(wantedTitle, StringComparison.OrdinalIgnoreCase) ||
+            wantedTitle.Contains(NormalizeQuery(s.Movie), StringComparison.OrdinalIgnoreCase));
+
+        return exactMatch?.Imdb ?? suggestions[0].Imdb;
+    }
+
+    private async Task<IReadOnlyList<MovieSuggestion>> SearchMovieSuggestionsAsync(string query, CancellationToken ct)
+    {
+        var client = _httpFactory.CreateClient("JellySub");
+        var url = $"{BaseUrl}/ajax/search/?mov={Uri.EscapeDataString(query)}";
+        _logger.LogDebug("[Yify] GET {Url}", url);
+
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0");
+        req.Headers.TryAddWithoutValidation("X-Requested-With", "XMLHttpRequest");
+        req.Headers.TryAddWithoutValidation("Accept", "application/json, text/javascript, */*; q=0.01");
+
+        using var resp = await client.SendAsync(req, ct).ConfigureAwait(false);
+        resp.EnsureSuccessStatusCode();
+
+        var json = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        var root = JsonNode.Parse(json) as JsonArray;
+        if (root is null)
+        {
+            return Array.Empty<MovieSuggestion>();
+        }
+
+        return root
+            .OfType<JsonObject>()
+            .Select(o => new MovieSuggestion(
+                o["movie"]?.ToString() ?? string.Empty,
+                o["imdb"]?.ToString() ?? string.Empty))
+            .Where(s => !string.IsNullOrWhiteSpace(s.Movie) && !string.IsNullOrWhiteSpace(s.Imdb))
+            .ToList();
+    }
+
+    private static string NormalizeQuery(string value)
+        => Regex.Replace(value.ToLowerInvariant(), @"[^a-z0-9]+", " ").Trim();
+
+    private sealed record MovieSuggestion(string Movie, string Imdb);
 
     private async Task<string> FetchHtmlAsync(string url, CancellationToken ct)
     {

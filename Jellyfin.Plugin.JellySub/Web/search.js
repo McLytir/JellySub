@@ -9,10 +9,10 @@ export default function (view, params) {
 
     // ── On show ───────────────────────────────────────────────────────────
     view.addEventListener('viewshow', () => {
-        // Pre-populate item ID from URL param
+        // Keep the resolved Jellyfin ID internal; show the title/year summary instead.
         const itemId = params.itemId || '';
         if (itemId) {
-            view.querySelector('#itemIdInput').value = itemId;
+            view.querySelector('#itemIdInput').value = '';
             currentItemId = itemId;
         }
 
@@ -63,7 +63,7 @@ function setMode(view, mode) {
 // ── Search ────────────────────────────────────────────────────────────────────
 
 async function runAssistedSearch(view) {
-    const itemId = view.querySelector('#itemIdInput').value.trim();
+    const itemId = view.querySelector('#itemIdInput').value.trim() || currentItemId || '';
     const lang   = view.querySelector('#assistedLang').value.trim() || undefined;
     if (!itemId) { Dashboard.toast('Enter a Jellyfin item ID'); return; }
 
@@ -92,6 +92,7 @@ async function doSearch(view, url) {
             Dashboard.processErrorResponse({ statusText: data.error });
             return;
         }
+        renderSearchInfo(view, data);
         results = data.results || [];
         renderResults(view, results);
     } catch (e) {
@@ -102,6 +103,21 @@ async function doSearch(view, url) {
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
+
+function renderSearchInfo(view, data) {
+    const info = view.querySelector('#itemInfo');
+    const title = (data.searchTitle || '').trim();
+    const year  = data.searchYear ? ` (${data.searchYear})` : '';
+
+    if (!title) {
+        info.style.display = 'none';
+        info.textContent = '';
+        return;
+    }
+
+    info.textContent = `${title}${year}`;
+    info.style.display = 'block';
+}
 
 function renderResults(view, res) {
     const container = view.querySelector('#resultsList');

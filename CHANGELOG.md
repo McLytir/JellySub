@@ -5,6 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.8] – 2026-03-26
+
+### Fixed
+- Search UI now shows the resolved media title and year instead of the raw Jellyfin item ID.
+- Added YIFY title-to-IMDb fallback so movie searches can work even when the item does not already carry an IMDb ID.
+
 ## [v1.0.7] – 2026-03-26
 
 ### Fixed
