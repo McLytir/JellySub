@@ -252,13 +252,17 @@ brew services restart jellyfin
 After installation and restart:
 
 1. Go to **Dashboard → Plugins → My Plugins → JellySub → Settings**.
-2. You land on the **Settings** page. Configure:
+2. Read the built-in overview at the top of the page. It explains the three main workflows:
+   - **Single item** subtitle search
+   - **Folder / series** batch download
+   - **Whole-library** subtitle scan
+3. Configure the settings section:
    - **Sources** — enable/disable and drag to set priority order.
    - **Preferred Languages** — add language codes in priority order  
      (e.g. `en` for English, `fr` for French). Use [BCP-47](https://r12a.github.io/app-subtags/) codes.
    - **Default mode** — *Assisted* (you pick) or *Auto* (silent best match).
-3. Click **Save**.
-4. *(Optional)* Install sync tools — see [Sync Tools](#sync-tools-ffsubsync--alass).
+4. Click **Save**.
+5. *(Optional)* Install sync tools — see [Sync Tools](#sync-tools-ffsubsync--alass).
 
 ---
 

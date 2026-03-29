@@ -26,7 +26,12 @@ public sealed class LibraryScanTask : IScheduledTask
     private readonly ILibraryManager _libraryManager;
     private readonly SubtitleAggregator _aggregator;
     private readonly SubtitleFileService _fileService;
+    private readonly ITaskManager _taskManager;
     private readonly ILogger<LibraryScanTask> _logger;
+
+    private readonly object _timerLock = new();
+    private Timer? _afterRefreshTimer;
+    private DateTime _lastLibraryChangeUtc = DateTime.MinValue;
 
     // Simple in-memory log of the last scan — read by the API controller
     private static readonly List<ScanLogEntry> _lastScanLog = new();
@@ -61,12 +66,18 @@ public sealed class LibraryScanTask : IScheduledTask
         ILibraryManager libraryManager,
         SubtitleAggregator aggregator,
         SubtitleFileService fileService,
+        ITaskManager taskManager,
         ILogger<LibraryScanTask> logger)
     {
         _libraryManager = libraryManager;
         _aggregator     = aggregator;
         _fileService    = fileService;
+        _taskManager    = taskManager;
         _logger         = logger;
+
+        _libraryManager.ItemAdded += OnLibraryItemChanged;
+        _libraryManager.ItemUpdated += OnLibraryItemChanged;
+        _libraryManager.ItemRemoved += OnLibraryItemChanged;
     }
 
     public string Name        => "JellySub: Scan library for missing subtitles";
@@ -75,7 +86,30 @@ public sealed class LibraryScanTask : IScheduledTask
     public string Category    => "JellySub";
 
     public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
-        => Array.Empty<TaskTriggerInfo>();
+    {
+        var schedule = Plugin.Instance?.Configuration.BatchScanSchedule ?? "Manual";
+        return schedule switch
+        {
+            "Daily" => new[]
+            {
+                new TaskTriggerInfo
+                {
+                    Type = TaskTriggerInfoType.TriggerDaily,
+                    TimeOfDayTicks = TimeSpan.FromHours(2).Ticks,
+                },
+            },
+            "Weekly" => new[]
+            {
+                new TaskTriggerInfo
+                {
+                    Type = TaskTriggerInfoType.WeeklyTrigger,
+                    DayOfWeek = DayOfWeek.Sunday,
+                    TimeOfDayTicks = TimeSpan.FromHours(2).Ticks,
+                },
+            },
+            _ => Array.Empty<TaskTriggerInfo>(),
+        };
+    }
 
     public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
@@ -96,6 +130,48 @@ public sealed class LibraryScanTask : IScheduledTask
         {
             IsRunning = false;
         }
+    }
+
+    private void OnLibraryItemChanged(object? sender, ItemChangeEventArgs e)
+    {
+        if (!ShouldAutoRunAfterLibraryRefresh())
+        {
+            return;
+        }
+
+        if (e.Item is null || e.Item.Path is null)
+        {
+            return;
+        }
+
+        lock (_timerLock)
+        {
+            _lastLibraryChangeUtc = DateTime.UtcNow;
+            _afterRefreshTimer ??= new Timer(_ => TriggerDeferredScan(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+            _afterRefreshTimer.Change(TimeSpan.FromMinutes(5), Timeout.InfiniteTimeSpan);
+        }
+    }
+
+    private bool ShouldAutoRunAfterLibraryRefresh()
+        => string.Equals(Plugin.Instance?.Configuration.BatchScanSchedule, "AfterLibraryRefresh", StringComparison.OrdinalIgnoreCase);
+
+    private void TriggerDeferredScan()
+    {
+        if (!ShouldAutoRunAfterLibraryRefresh() || IsRunning)
+        {
+            return;
+        }
+
+        lock (_timerLock)
+        {
+            if (DateTime.UtcNow - _lastLibraryChangeUtc < TimeSpan.FromMinutes(4))
+            {
+                _afterRefreshTimer?.Change(TimeSpan.FromMinutes(1), Timeout.InfiniteTimeSpan);
+                return;
+            }
+        }
+
+        _ = Task.Run(() => _taskManager.Execute<LibraryScanTask>());
     }
 
     // ─────────────────────────────────────────────────────────────────────────
