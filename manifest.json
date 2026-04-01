@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/assets/logo.png",
     "versions": [
       {
+        "version": "1.0.26.0",
+        "changelog": "\n### Fixed\n- The ellipsis/context-menu \"Search subtitles\" action is now shown only for playable media items (Movie/Episode/Video), not folder-like items such as Series or Season. This prevents assisted search from auto-launching against folder metadata like \"Season 1 2023\".\n- The context-menu search route now explicitly opens in assisted mode.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/McLytir/JellySub/releases/download/v1.0.26/jellysub_1.0.26.0.zip",
+        "checksum": "5952573f31ae0a543cbd7b471e70121d",
+        "timestamp": "2026-04-01T15:24:03Z"
+      },
+      {
         "version": "1.0.25.0",
         "changelog": "\n### Fixed\n- Search page now explicitly requests JSON and parses string responses defensively. This fixes the case where the backend returned valid search results but Jellyfin's web client handed the page a raw JSON string, causing the UI to treat the result list as empty.",
         "targetAbi": "10.10.0.0",
