@@ -78,7 +78,6 @@ async function runManualSearch(view) {
     const lang    = view.querySelector('#manualLang').value.trim() || undefined;
     if (!query) { Dashboard.toast('Enter a title'); return; }
 
-    currentItemId = null;
     const qs = { query, ...(lang && { languages: lang }), ...(season && { season }), ...(episode && { episode }) };
     await doSearch(view, ApiClient.getUrl(`${API}/search/manual`, qs));
 }
