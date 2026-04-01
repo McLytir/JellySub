@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/assets/logo.png",
     "versions": [
       {
+        "version": "1.0.14.0",
+        "changelog": "\n### Fixed\n- Manual subtitle search now preserves the selected Jellyfin item context, so search results can be downloaded directly from the search page instead of failing with a missing item ID.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/McLytir/JellySub/releases/download/v1.0.14/jellysub_1.0.14.0.zip",
+        "checksum": "b952de14459aa9fd1c91a11df1a232de",
+        "timestamp": "2026-04-01T07:05:58Z"
+      },
+      {
         "version": "1.0.13.0",
         "changelog": "\n### Fixed\n- Restored OpenSubtitles.org search after the source implementation changes and fixed the follow-up build issues in the release pipeline.\n- Fixed episode request construction/scoping issues in the JellySub controller.\n\n### Improved\n- Added missing XML documentation across public DTOs, services, and controller APIs to reduce release/build noise.",
         "targetAbi": "10.10.0.0",
