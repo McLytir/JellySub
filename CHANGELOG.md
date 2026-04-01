@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.22] – 2026-04-01
+
+### Fixed
+- Search results page now tolerates both camelCase and PascalCase API payloads. This fixes the case where the backend was returning valid subtitle results but the web UI rendered nothing because it only looked for lowercase JSON property names.
+
 ## [v1.0.21] – 2026-04-01
 
 ### Changed
