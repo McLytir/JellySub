@@ -163,7 +163,7 @@
                     icon: 'subtitles',
                     name: 'JellySub: Search subtitles',
                     compactName: '💬 Subtitle search',
-                    run: () => this.navigate(`configurationpage?name=jellysubsearch&itemId=${encodeURIComponent(context.itemId)}`)
+                    run: () => this.navigate(`configurationpage?name=jellysubsearchv3&itemId=${encodeURIComponent(context.itemId)}`)
                 });
 
                 if (isFolderLike || isVideoLike) {

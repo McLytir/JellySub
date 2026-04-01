@@ -10,7 +10,7 @@ const ALL_SOURCES = [
 export default function (view) {
     let config = {};
 
-    view.querySelector('#navSearch').addEventListener('click', () => navigateTo('configurationpage?name=jellysubsearch'));
+    view.querySelector('#navSearch').addEventListener('click', () => navigateTo('configurationpage?name=jellysubsearchv3'));
     view.querySelector('#navSeries').addEventListener('click', () => navigateTo('configurationpage?name=jellysubseries'));
     view.querySelector('#navScan').addEventListener('click', () => navigateTo('configurationpage?name=jellysubscan'));
 

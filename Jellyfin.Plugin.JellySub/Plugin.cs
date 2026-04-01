@@ -45,8 +45,8 @@ public sealed class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             new PluginPageInfo { Name = "jellysubjs",       EmbeddedResourcePath = $"{ns}.Web.config.js"   },
 
             // Subtitle search (manual + assisted)
-            new PluginPageInfo { Name = "jellysubsearch",     DisplayName = "Subtitle Search", EnableInMainMenu = true, MenuSection = "plugins", MenuIcon = "subtitles", EmbeddedResourcePath = $"{ns}.Web.search.html" },
-            new PluginPageInfo { Name = "jellysubsearchjsv2", EmbeddedResourcePath = $"{ns}.Web.search.js"   },
+            new PluginPageInfo { Name = "jellysubsearchv3",   DisplayName = "Subtitle Search", EnableInMainMenu = true, MenuSection = "plugins", MenuIcon = "subtitles", EmbeddedResourcePath = $"{ns}.Web.search.html" },
+            new PluginPageInfo { Name = "jellysubsearchjsv3", EmbeddedResourcePath = $"{ns}.Web.search.js"   },
 
             // Series / folder batch download
             new PluginPageInfo { Name = "jellysubseries",   DisplayName = "Batch Subtitles", EnableInMainMenu = true, MenuSection = "plugins", MenuIcon = "folder", EmbeddedResourcePath = $"{ns}.Web.series.html" },
