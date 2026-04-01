@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/assets/logo.png",
     "versions": [
       {
+        "version": "1.0.16.0",
+        "changelog": "\n### Fixed\n- Bypassed broken ambient/system proxy resolution for JellySub outbound HTTP requests. This fixes search failures where the running Jellyfin process tried to connect to an invalid proxy host such as `_` instead of the subtitle provider.\n- Keeps the restored OpenSubtitles REST search/download flow and the manual-search item-context fix.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/McLytir/JellySub/releases/download/v1.0.16/jellysub_1.0.16.0.zip",
+        "checksum": "37c849276476ccacdb36c0e67673f006",
+        "timestamp": "2026-04-01T09:48:58Z"
+      },
+      {
         "version": "1.0.15.0",
         "changelog": "\n### Fixed\n- Restored real OpenSubtitles search and download functionality by switching back to the working REST API flow; the newer HTML-scraping path was being blocked by the site's anti-bot challenge and returned 401 challenge pages instead of search results.\n- Manual subtitle search continues to preserve the selected Jellyfin item context so search results can be downloaded directly from the search page.",
         "targetAbi": "10.10.0.0",
