@@ -5,6 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.13] – 2026-04-01
+
+### Fixed
+- Restored OpenSubtitles.org search after the source implementation changes and fixed the follow-up build issues in the release pipeline.
+- Fixed episode request construction/scoping issues in the JellySub controller.
+
+### Improved
+- Added missing XML documentation across public DTOs, services, and controller APIs to reduce release/build noise.
+
 ## [v1.0.12] – 2026-03-29
 
 ### Fixed
