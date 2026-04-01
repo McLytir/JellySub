@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.21] – 2026-04-01
+
+### Changed
+- Added search-pipeline result-count logging for OpenSubtitles, the aggregator, and the API endpoints. This makes it explicit whether results are being returned by the provider, filtered out in JellySub, or lost later in the UI.
+
 ## [v1.0.20] – 2026-04-01
 
 ### Fixed
