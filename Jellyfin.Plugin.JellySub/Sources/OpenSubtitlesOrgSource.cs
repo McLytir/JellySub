@@ -48,6 +48,7 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
         {
             UseProxy = false,
             AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
+            AllowAutoRedirect = false,
             ConnectCallback = async (context, cancellationToken) =>
             {
                 _logger.LogInformation(
@@ -70,11 +71,6 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
         };
 
         var client = new HttpClient(handler, disposeHandler: true);
-        client.DefaultRequestHeaders.TryAddWithoutValidation(
-            "User-Agent",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-            "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
-        client.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.9");
         return client;
     }
 
@@ -200,6 +196,10 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
             req.RequestUri?.ToString(),
             req.RequestUri?.Host);
         using var response = await _directClient.SendAsync(req, ct).ConfigureAwait(false);
+        _logger.LogInformation(
+            "[OpenSubtitlesOrg] Search response {StatusCode} location {Location}",
+            (int)response.StatusCode,
+            response.Headers.Location?.ToString());
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
     }
