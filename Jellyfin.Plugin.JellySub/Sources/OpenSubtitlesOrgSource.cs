@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json.Nodes;
@@ -28,6 +29,8 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
 {
     private const string BaseUrl = "https://rest.opensubtitles.org";
 
+    private static readonly HttpClient DirectHttpClient = CreateDirectHttpClient();
+
     private readonly IHttpClientFactory _httpFactory;
     private readonly ILogger<OpenSubtitlesOrgSource> _logger;
 
@@ -36,6 +39,23 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
     {
         _httpFactory = httpFactory;
         _logger = logger;
+    }
+
+    private static HttpClient CreateDirectHttpClient()
+    {
+        var handler = new HttpClientHandler
+        {
+            UseProxy = false,
+            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
+        };
+
+        var client = new HttpClient(handler, disposeHandler: false);
+        client.DefaultRequestHeaders.TryAddWithoutValidation(
+            "User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+            "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+        client.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.9");
+        return client;
     }
 
     /// <summary>Stable identifier for this subtitle source.</summary>
@@ -85,11 +105,10 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
     {
         try
         {
-            var client = _httpFactory.CreateClient("JellySub");
             using var req = new HttpRequestMessage(HttpMethod.Get, result.DownloadUrl);
             req.Headers.TryAddWithoutValidation("Accept", "application/octet-stream, application/zip, text/plain;q=0.9, */*;q=0.8");
 
-            using var response = await client.SendAsync(req, cancellationToken).ConfigureAwait(false);
+            using var response = await DirectHttpClient.SendAsync(req, cancellationToken).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
             var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
@@ -151,12 +170,11 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
 
     private async Task<string> FetchJsonAsync(string url, CancellationToken ct)
     {
-        var client = _httpFactory.CreateClient("JellySub");
         using var req = new HttpRequestMessage(HttpMethod.Get, url);
         req.Headers.TryAddWithoutValidation("Accept", "application/json, text/plain, */*; q=0.01");
         req.Headers.TryAddWithoutValidation("X-User-Agent", "JellySub/1.0");
 
-        using var response = await client.SendAsync(req, ct).ConfigureAwait(false);
+        using var response = await DirectHttpClient.SendAsync(req, ct).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
     }
