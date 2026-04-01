@@ -1,5 +1,6 @@
 namespace Jellyfin.Plugin.JellySub.Api.Dto;
 
+/// <summary>Request payload for downloading and saving a subtitle.</summary>
 public sealed class DownloadRequestDto
 {
     /// <summary>Jellyfin item ID of the media file to subtitle.</summary>
@@ -27,9 +28,15 @@ public sealed class DownloadRequestDto
     public string ReleaseGroup { get; set; } = string.Empty;
 }
 
+/// <summary>Response payload for a subtitle download request.</summary>
 public sealed class DownloadResponseDto
 {
-    public bool   Success   { get; set; }
+    /// <summary>True when the subtitle was downloaded and saved successfully.</summary>
+    public bool Success { get; set; }
+
+    /// <summary>Filesystem path where the subtitle was saved.</summary>
     public string SavedPath { get; set; } = string.Empty;
-    public string? Error    { get; set; }
+
+    /// <summary>Error message when the download or save operation failed.</summary>
+    public string? Error { get; set; }
 }
