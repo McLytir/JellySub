@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.19] – 2026-04-01
+
+### Fixed
+- OpenSubtitles REST requests now use the exact minimal header set that works in direct PowerShell testing, and automatic redirects are disabled. This avoids following the malformed redirect target that was surfacing in Jellyfin as a second connection attempt to `_ :443`.
+
 ## [v1.0.18] – 2026-04-01
 
 ### Changed
