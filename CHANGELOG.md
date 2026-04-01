@@ -5,6 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.15] – 2026-04-01
+
+### Fixed
+- Restored real OpenSubtitles search and download functionality by switching back to the working REST API flow; the newer HTML-scraping path was being blocked by the site's anti-bot challenge and returned 401 challenge pages instead of search results.
+- Manual subtitle search continues to preserve the selected Jellyfin item context so search results can be downloaded directly from the search page.
+
 ## [v1.0.14] – 2026-04-01
 
 ### Fixed
