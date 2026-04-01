@@ -200,6 +200,31 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
             "[OpenSubtitlesOrg] Search response {StatusCode} location {Location}",
             (int)response.StatusCode,
             response.Headers.Location?.ToString());
+
+        if ((int)response.StatusCode is 301 or 302 or 307 or 308)
+        {
+            var redirectUri = response.Headers.Location;
+            if (redirectUri is not null &&
+                string.Equals(redirectUri.Host, "_", StringComparison.Ordinal) &&
+                req.RequestUri is not null)
+            {
+                var retryUrl = $"{req.RequestUri.Scheme}://{req.RequestUri.Host}{redirectUri.PathAndQuery}";
+                _logger.LogInformation("[OpenSubtitlesOrg] Retrying malformed redirect as {Url}", retryUrl);
+
+                using var retryReq = new HttpRequestMessage(HttpMethod.Get, retryUrl);
+                retryReq.Headers.TryAddWithoutValidation("Accept", "application/json, text/plain, */*; q=0.01");
+                retryReq.Headers.TryAddWithoutValidation("X-User-Agent", "JellySub/1.0");
+
+                using var retryResponse = await _directClient.SendAsync(retryReq, ct).ConfigureAwait(false);
+                _logger.LogInformation(
+                    "[OpenSubtitlesOrg] Retry response {StatusCode} location {Location}",
+                    (int)retryResponse.StatusCode,
+                    retryResponse.Headers.Location?.ToString());
+                retryResponse.EnsureSuccessStatusCode();
+                return await retryResponse.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            }
+        }
+
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
     }
@@ -211,7 +236,8 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
 
     private static string BuildTitleSearchUrl(string title, string lang)
     {
-        return $"{BaseUrl}/search/query-{Uri.EscapeDataString(title)}/sublanguageid-{LanguageMap.ToThreeLetter(lang)}";
+        var normalizedTitle = title.Trim().ToLowerInvariant();
+        return $"{BaseUrl}/search/query-{Uri.EscapeDataString(normalizedTitle)}/sublanguageid-{LanguageMap.ToThreeLetter(lang)}";
     }
 
     private static string BuildSearchTitle(SubtitleSearchRequest request)
