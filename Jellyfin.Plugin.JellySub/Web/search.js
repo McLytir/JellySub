@@ -86,14 +86,17 @@ async function doSearch(view, url) {
     Dashboard.showLoadingMsg();
     hideAll(view);
     try {
-        const data = await ApiClient.ajax({ type: 'GET', url });
-        if (data.error) {
-            Dashboard.processErrorResponse({ statusText: data.error });
+        let data = await ApiClient.ajax({ type: 'GET', url, dataType: 'json' });
+        if (typeof data === 'string') {
+            data = JSON.parse(data);
+        }
+        if (data.error || data.Error) {
+            Dashboard.processErrorResponse({ statusText: data.error || data.Error });
             return;
         }
         renderSearchInfo(view, data);
         const rawResults = data.results || data.Results || [];
-        results = rawResults.map(normalizeResult);
+        results = Array.isArray(rawResults) ? rawResults.map(normalizeResult) : [];
         renderResults(view, results);
     } catch (e) {
         Dashboard.processErrorResponse({ statusText: 'Search failed: ' + e });
