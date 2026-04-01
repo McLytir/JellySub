@@ -92,7 +92,8 @@ async function doSearch(view, url) {
             return;
         }
         renderSearchInfo(view, data);
-        results = data.results || [];
+        const rawResults = data.results || data.Results || [];
+        results = rawResults.map(normalizeResult);
         renderResults(view, results);
     } catch (e) {
         Dashboard.processErrorResponse({ statusText: 'Search failed: ' + e });
@@ -105,8 +106,9 @@ async function doSearch(view, url) {
 
 function renderSearchInfo(view, data) {
     const info = view.querySelector('#itemInfo');
-    const title = (data.searchTitle || '').trim();
-    const year  = data.searchYear ? ` (${data.searchYear})` : '';
+    const title = String(data.searchTitle || data.SearchTitle || '').trim();
+    const yearValue = data.searchYear ?? data.SearchYear;
+    const year  = yearValue ? ` (${yearValue})` : '';
 
     if (!title) {
         info.style.display = 'none';
@@ -237,5 +239,24 @@ function navigateTo(url) {
     window.location.href = '/' + url;
 }
 
-const escHtml = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function normalizeResult(r) {
+    return {
+        id: r.id ?? r.Id ?? '',
+        sourceId: r.sourceId ?? r.SourceId ?? '',
+        sourceName: r.sourceName ?? r.SourceName ?? '',
+        releaseName: r.releaseName ?? r.ReleaseName ?? '',
+        language: r.language ?? r.Language ?? '',
+        languageName: r.languageName ?? r.LanguageName ?? '',
+        downloadCount: r.downloadCount ?? r.DownloadCount ?? 0,
+        uploader: r.uploader ?? r.Uploader ?? '',
+        uploadDate: r.uploadDate ?? r.UploadDate ?? null,
+        isHashMatch: r.isHashMatch ?? r.IsHashMatch ?? false,
+        isHearingImpaired: r.isHearingImpaired ?? r.IsHearingImpaired ?? false,
+        isMachineTranslated: r.isMachineTranslated ?? r.IsMachineTranslated ?? false,
+        releaseGroup: r.releaseGroup ?? r.ReleaseGroup ?? '',
+        downloadUrl: r.downloadUrl ?? r.DownloadUrl ?? '',
+    };
+}
+
+const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sleep   = ms => new Promise(r => setTimeout(r, ms));
