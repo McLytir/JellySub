@@ -6,6 +6,8 @@ using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using System.Net;
+using System.Net.Http;
 
 namespace Jellyfin.Plugin.JellySub;
 
@@ -25,6 +27,11 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
                 "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
             c.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9");
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            UseProxy = false,
+            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
         });
 
         // Subtitle sources (one per supported site)
