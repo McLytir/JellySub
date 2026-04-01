@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.23] – 2026-04-01
+
+### Fixed
+- Forced a cache bust for the subtitle search page controller script. If Jellyfin/browser was still serving an older cached search.js bundle, this ensures the updated result-normalization logic is actually loaded.
+
 ## [v1.0.22] – 2026-04-01
 
 ### Fixed
