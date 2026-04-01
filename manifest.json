@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/assets/logo.png",
     "versions": [
       {
+        "version": "1.0.24.0",
+        "changelog": "\n### Fixed\n- Forced the subtitle search UI onto a brand-new page/controller route to defeat stubborn Jellyfin/browser cache reuse.\n- Added a backend fallback so if a stale UI still accidentally sends `itemId=Inception` to the assisted-search endpoint, JellySub treats it as a title search instead of throwing a GUID parse error.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/McLytir/JellySub/releases/download/v1.0.24/jellysub_1.0.24.0.zip",
+        "checksum": "7d71fb81d1ede7d24ec09ccceb0d8274",
+        "timestamp": "2026-04-01T13:02:40Z"
+      },
+      {
         "version": "1.0.23.0",
         "changelog": "\n### Fixed\n- Forced a cache bust for the subtitle search page controller script. If Jellyfin/browser was still serving an older cached search.js bundle, this ensures the updated result-normalization logic is actually loaded.",
         "targetAbi": "10.10.0.0",
