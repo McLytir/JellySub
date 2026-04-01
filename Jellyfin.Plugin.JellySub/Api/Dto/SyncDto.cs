@@ -3,6 +3,7 @@ using Jellyfin.Plugin.JellySub.Models;
 
 namespace Jellyfin.Plugin.JellySub.Api.Dto;
 
+/// <summary>Request payload for subtitle synchronization.</summary>
 public sealed class SyncRequestDto
 {
     /// <summary>Tool ID: "ffsubsync" or "alass".</summary>
@@ -21,26 +22,42 @@ public sealed class SyncRequestDto
     public string OutputPath { get; set; } = string.Empty;
 }
 
+/// <summary>Response payload for a subtitle synchronization request.</summary>
 public sealed class SyncResponseDto
 {
-    public bool   Success    { get; set; }
+    /// <summary>True when subtitle synchronization succeeded.</summary>
+    public bool Success { get; set; }
+
+    /// <summary>Path to the synchronized subtitle file.</summary>
     public string OutputPath { get; set; } = string.Empty;
+
+    /// <summary>Raw output emitted by the synchronization tool.</summary>
     public string ToolOutput { get; set; } = string.Empty;
-    public string? Error     { get; set; }
+
+    /// <summary>Error message when synchronization failed.</summary>
+    public string? Error { get; set; }
 }
 
+/// <summary>Status payload describing available subtitle synchronization tools.</summary>
 public sealed class SyncToolsStatusDto
 {
+    /// <summary>Known synchronization tools and their availability status.</summary>
     public IReadOnlyList<SyncToolStatus> Tools { get; set; } = new List<SyncToolStatus>();
 }
 
+/// <summary>Request payload to install a subtitle synchronization tool.</summary>
 public sealed class InstallToolRequestDto
 {
+    /// <summary>Identifier of the tool to install.</summary>
     public string ToolId { get; set; } = string.Empty;
 }
 
+/// <summary>Response payload for a synchronization tool installation.</summary>
 public sealed class InstallToolResponseDto
 {
-    public bool   Success { get; set; }
-    public string Output  { get; set; } = string.Empty;
+    /// <summary>True when the tool installation completed successfully.</summary>
+    public bool Success { get; set; }
+
+    /// <summary>Installer output captured during the operation.</summary>
+    public string Output { get; set; } = string.Empty;
 }
