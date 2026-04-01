@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.18] – 2026-04-01
+
+### Changed
+- Added explicit OpenSubtitles direct-connect diagnostics so the running Jellyfin logs now show the exact request URI, request host, and direct target host/port used by the source. This is to isolate the remaining `_ :443` networking failure on affected Windows installs.
+
 ## [v1.0.17] – 2026-04-01
 
 ### Fixed
