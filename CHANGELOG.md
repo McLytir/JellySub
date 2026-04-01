@@ -5,6 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.16] – 2026-04-01
+
+### Fixed
+- Bypassed broken ambient/system proxy resolution for JellySub outbound HTTP requests. This fixes search failures where the running Jellyfin process tried to connect to an invalid proxy host such as `_` instead of the subtitle provider.
+- Keeps the restored OpenSubtitles REST search/download flow and the manual-search item-context fix.
+
 ## [v1.0.15] – 2026-04-01
 
 ### Fixed
