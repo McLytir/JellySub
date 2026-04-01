@@ -84,6 +84,37 @@ public sealed class JellySubController : ControllerBase
     {
         try
         {
+            if (!string.IsNullOrWhiteSpace(itemId) && !Guid.TryParse(itemId, out _))
+            {
+                _logger.LogWarning(
+                    "Search endpoint received non-GUID itemId '{ItemId}'. Falling back to title-based search.",
+                    itemId);
+
+                var fallbackRequest = new SubtitleSearchRequest
+                {
+                    Title = itemId,
+                    SeriesTitle = itemId,
+                    Languages = ParseLanguages(languages),
+                };
+
+                var fallbackResults = await _aggregator
+                    .SearchAsync(fallbackRequest, cancellationToken)
+                    .ConfigureAwait(false);
+                _logger.LogInformation(
+                    "Fallback title search '{Query}' returned {Count} results",
+                    itemId,
+                    fallbackResults.Count);
+
+                return Ok(new SearchResultDto
+                {
+                    SearchTitle = itemId,
+                    SearchYear = null,
+                    Results = fallbackResults
+                        .Select(r => SubtitleResultDto.From(r, SourceName(r.SourceId)))
+                        .ToList()
+                });
+            }
+
             BaseItem? item = null;
             if (!string.IsNullOrWhiteSpace(itemId))
             {
