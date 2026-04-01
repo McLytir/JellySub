@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/assets/logo.png",
     "versions": [
       {
+        "version": "1.0.21.0",
+        "changelog": "\n### Changed\n- Added search-pipeline result-count logging for OpenSubtitles, the aggregator, and the API endpoints. This makes it explicit whether results are being returned by the provider, filtered out in JellySub, or lost later in the UI.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/McLytir/JellySub/releases/download/v1.0.21/jellysub_1.0.21.0.zip",
+        "checksum": "c8c605b3e65349808ea6dd9151cc7b07",
+        "timestamp": "2026-04-01T12:40:07Z"
+      },
+      {
         "version": "1.0.20.0",
         "changelog": "\n### Fixed\n- OpenSubtitles title searches now avoid the provider's broken canonical redirect behavior. Query titles are normalized to lowercase before request, and malformed redirects such as `https://_/search/...` are repaired and retried against the original host.",
         "targetAbi": "10.10.0.0",
