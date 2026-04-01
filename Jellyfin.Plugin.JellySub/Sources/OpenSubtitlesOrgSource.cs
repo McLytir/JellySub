@@ -31,15 +31,20 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
     private readonly IHttpClientFactory _httpFactory;
     private readonly ILogger<OpenSubtitlesOrgSource> _logger;
 
+    /// <summary>Initializes the OpenSubtitles REST-backed subtitle source.</summary>
     public OpenSubtitlesOrgSource(IHttpClientFactory httpFactory, ILogger<OpenSubtitlesOrgSource> logger)
     {
         _httpFactory = httpFactory;
         _logger = logger;
     }
 
+    /// <summary>Stable identifier for this subtitle source.</summary>
     public string Id => SourceIds.OpenSubtitlesOrg;
+
+    /// <summary>Human-readable name for this subtitle source.</summary>
     public string DisplayName => "OpenSubtitles.org";
 
+    /// <summary>Searches OpenSubtitles for subtitles matching the given request.</summary>
     public async Task<IReadOnlyList<SubtitleResult>> SearchAsync(
         SubtitleSearchRequest request,
         CancellationToken cancellationToken)
@@ -75,6 +80,7 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
             .ToList();
     }
 
+    /// <summary>Downloads and extracts subtitle text for a previously returned result.</summary>
     public async Task<string?> DownloadAsync(SubtitleResult result, CancellationToken cancellationToken)
     {
         try
@@ -233,13 +239,13 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
         var episode = GetInt(item, "SeriesEpisode");
         if (request.SeasonNumber.HasValue)
         {
-            if (season.GetValueOrDefault() <= 0 || season.Value != request.SeasonNumber.Value)
+            if (!season.HasValue || season.Value <= 0 || season.Value != request.SeasonNumber.Value)
             {
                 return null;
             }
 
             if (request.EpisodeNumber.HasValue &&
-                (episode.GetValueOrDefault() <= 0 || episode.Value != request.EpisodeNumber.Value))
+                (!episode.HasValue || episode.Value <= 0 || episode.Value != request.EpisodeNumber.Value))
             {
                 return null;
             }
