@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.14] – 2026-04-01
+
+### Fixed
+- Manual subtitle search now preserves the selected Jellyfin item context, so search results can be downloaded directly from the search page instead of failing with a missing item ID.
+
 ## [v1.0.13] – 2026-04-01
 
 ### Fixed
