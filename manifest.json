@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/assets/logo.png",
     "versions": [
       {
+        "version": "1.0.13.0",
+        "changelog": "\n### Fixed\n- Restored OpenSubtitles.org search after the source implementation changes and fixed the follow-up build issues in the release pipeline.\n- Fixed episode request construction/scoping issues in the JellySub controller.\n\n### Improved\n- Added missing XML documentation across public DTOs, services, and controller APIs to reduce release/build noise.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/McLytir/JellySub/releases/download/v1.0.13/jellysub_1.0.13.0.zip",
+        "checksum": "f4a4a7a9ecaa20d43d27b02bb1837f26",
+        "timestamp": "2026-04-01T06:54:18Z"
+      },
+      {
         "version": "1.0.11.0",
         "changelog": "\n### Fixed\n- OpenSubtitles REST now normalizes IMDb IDs to the numeric form it expects, restoring subtitle results for series like Blossoms Shanghai.\n- OpenSubtitles search now uses the public REST API instead of scraping the classic site, which avoids the anti-bot block.\n- Search UI now shows the resolved media title and year instead of the raw Jellyfin item ID.\n- Added YIFY title-to-IMDb fallback so movie searches can work even when the item does not already carry an IMDb ID.",
         "targetAbi": "10.10.0.0",
