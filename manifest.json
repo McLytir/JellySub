@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/assets/logo.png",
     "versions": [
       {
+        "version": "1.0.20.0",
+        "changelog": "\n### Fixed\n- OpenSubtitles title searches now avoid the provider's broken canonical redirect behavior. Query titles are normalized to lowercase before request, and malformed redirects such as `https://_/search/...` are repaired and retried against the original host.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/McLytir/JellySub/releases/download/v1.0.20/jellysub_1.0.20.0.zip",
+        "checksum": "8129aad6be7933be686744359090691d",
+        "timestamp": "2026-04-01T12:00:51Z"
+      },
+      {
         "version": "1.0.19.0",
         "changelog": "\n### Fixed\n- OpenSubtitles REST requests now use the exact minimal header set that works in direct PowerShell testing, and automatic redirects are disabled. This avoids following the malformed redirect target that was surfacing in Jellyfin as a second connection attempt to `_ :443`.",
         "targetAbi": "10.10.0.0",
