@@ -5,6 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.24] – 2026-04-01
+
+### Fixed
+- Forced the subtitle search UI onto a brand-new page/controller route to defeat stubborn Jellyfin/browser cache reuse.
+- Added a backend fallback so if a stale UI still accidentally sends `itemId=Inception` to the assisted-search endpoint, JellySub treats it as a title search instead of throwing a GUID parse error.
+
 ## [v1.0.23] – 2026-04-01
 
 ### Fixed
