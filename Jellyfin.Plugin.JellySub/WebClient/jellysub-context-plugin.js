@@ -158,13 +158,15 @@
             const isVideoLike = ['Movie', 'Episode', 'Video'].includes(itemType);
 
             if (context.itemId) {
-                actions.push({
-                    id: 'jellysub-search',
-                    icon: 'subtitles',
-                    name: 'JellySub: Search subtitles',
-                    compactName: '💬 Subtitle search',
-                    run: () => this.navigate(`configurationpage?name=jellysubsearchv3&itemId=${encodeURIComponent(context.itemId)}`)
-                });
+                if (isVideoLike) {
+                    actions.push({
+                        id: 'jellysub-search',
+                        icon: 'subtitles',
+                        name: 'JellySub: Search subtitles',
+                        compactName: '💬 Subtitle search',
+                        run: () => this.navigate(`configurationpage?name=jellysubsearchv3&mode=assisted&itemId=${encodeURIComponent(context.itemId)}`)
+                    });
+                }
 
                 if (isFolderLike || isVideoLike) {
                     actions.push({
