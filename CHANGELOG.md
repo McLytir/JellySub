@@ -5,6 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.26] – 2026-04-02
+
+### Fixed
+- The ellipsis/context-menu "Search subtitles" action is now shown only for playable media items (Movie/Episode/Video), not folder-like items such as Series or Season. This prevents assisted search from auto-launching against folder metadata like "Season 1 2023".
+- The context-menu search route now explicitly opens in assisted mode.
+
 ## [v1.0.25] – 2026-04-02
 
 ### Fixed
