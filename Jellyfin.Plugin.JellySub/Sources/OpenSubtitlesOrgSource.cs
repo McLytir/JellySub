@@ -1,15 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
 using HtmlAgilityPack;
 using Jellyfin.Plugin.JellySub.Models;
 using Microsoft.Extensions.Logging;
@@ -204,8 +201,8 @@ namespace Jellyfin.Plugin.JellySub.Sources
             // --- Release name ---
             var releaseNameSpan = titleCell.SelectSingleNode(".//span[@title]");
             var releaseName = releaseNameSpan != null
-                ? HttpEntity.DeEntitize(releaseNameSpan.GetAttributeValue("title", string.Empty).Trim())
-                : HttpEntity.DeEntitize(titleLink.InnerText.Trim());
+                ? HtmlEntity.DeEntitize(releaseNameSpan.GetAttributeValue("title", string.Empty).Trim())
+                : HtmlEntity.DeEntitize(titleLink.InnerText.Trim());
 
             // --- Download count ---
             var dlCount = 0;
@@ -255,7 +252,7 @@ namespace Jellyfin.Plugin.JellySub.Sources
             else
             {
                 // Fallback: take the cell text and remove the download count
-                var cellText = HttpEntity.DeEntitize(dlCell.InnerText.Trim());
+                var cellText = HtmlEntity.DeEntitize(dlCell.InnerText.Trim());
                 formatText = cellText.Replace(dlCount.ToString(), "").Trim();
             }
 
@@ -298,8 +295,6 @@ namespace Jellyfin.Plugin.JellySub.Sources
                 Uploader = string.Empty, // Not extracted in the new logic; left empty
                 UploadDate = null, // Not parsed in the new logic; left null
                 Format = formatText,
-                Rating = rating,
-                DetailUrl = detailUrl,
                 DownloadUrl = downloadUrl,
                 ReleaseGroup = ExtractReleaseGroup(releaseName)
             };
