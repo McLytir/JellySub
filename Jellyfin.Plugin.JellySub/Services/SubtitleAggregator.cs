@@ -46,6 +46,14 @@ public sealed class SubtitleAggregator
         var tasks = orderedSources.Select(s => SafeSearch(s, request, cancellationToken));
         var allResults = await Task.WhenAll(tasks).ConfigureAwait(false);
 
+        for (var i = 0; i < orderedSources.Count; i++)
+        {
+            _logger.LogInformation(
+                "Aggregator source {Source} returned {Count} results",
+                orderedSources[i].Id,
+                allResults[i].Count);
+        }
+
         var merged = allResults.SelectMany(r => r).ToList();
 
         // Apply global minimum download-count filter
@@ -55,6 +63,11 @@ public sealed class SubtitleAggregator
                 .Where(r => r.DownloadCount >= cfg.MinimumDownloadCount)
                 .ToList();
         }
+
+        _logger.LogInformation(
+            "Aggregator merged {Count} results after filtering (MinDownloadCount={MinDownloadCount})",
+            merged.Count,
+            cfg.MinimumDownloadCount);
 
         return Rank(merged);
     }

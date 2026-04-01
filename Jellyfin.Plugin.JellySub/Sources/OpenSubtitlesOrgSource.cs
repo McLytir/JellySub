@@ -181,6 +181,10 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
 
         var json = await FetchJsonAsync(url, ct).ConfigureAwait(false);
         var parsed = ParseResults(json, request);
+        _logger.LogInformation(
+            "[OpenSubtitlesOrg] Parsed {Count} subtitle candidates from {Url}",
+            parsed.Count,
+            url);
 
         return parsed;
     }

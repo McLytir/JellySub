@@ -100,6 +100,10 @@ public sealed class JellySubController : ControllerBase
             var results = await _aggregator
                 .SearchAsync(request, cancellationToken)
                 .ConfigureAwait(false);
+            _logger.LogInformation(
+                "Assisted search for item {ItemId} returned {Count} results",
+                itemId,
+                results.Count);
 
             string? searchTitle = null;
             int? searchYear = null;
@@ -146,6 +150,10 @@ public sealed class JellySubController : ControllerBase
         };
 
         var results = await _aggregator.SearchAsync(request, cancellationToken).ConfigureAwait(false);
+        _logger.LogInformation(
+            "Manual search '{Query}' returned {Count} results",
+            query,
+            results.Count);
 
         return Ok(new SearchResultDto
         {
