@@ -4,404 +4,388 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
-using System.Text.RegularExpressions;
+using System.Text;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
-using HtmlAgilityPack;
 using Jellyfin.Plugin.JellySub.Models;
 using Microsoft.Extensions.Logging;
 
-namespace Jellyfin.Plugin.JellySub.Sources
+namespace Jellyfin.Plugin.JellySub.Sources;
+
+/// <summary>
+/// OpenSubtitles search source backed by the public REST API.
+///
+/// The classic HTML site is protected by anti-bot challenges, so this source
+/// uses the public JSON API instead:
+///   - search/imdbid-{ttid}/sublanguageid-{lang}
+///   - search/query-{title}/sublanguageid-{lang}
+///
+/// Downloads are returned as either ZIP or GZip payloads, depending on which
+/// API link is used.
+/// </summary>
+public sealed class OpenSubtitlesOrgSource : ISubtitleSource
 {
-    /// <summary>
-    /// Scrapes opensubtitles.org (the classic site) — no account required.
-    /// Implements the same logic as the subtitle-finder Node.js project.
-    /// </summary>
-    public sealed class OpenSubtitlesOrgSource : ISubtitleSource
+    private const string BaseUrl = "https://rest.opensubtitles.org";
+
+    private readonly IHttpClientFactory _httpFactory;
+    private readonly ILogger<OpenSubtitlesOrgSource> _logger;
+
+    public OpenSubtitlesOrgSource(IHttpClientFactory httpFactory, ILogger<OpenSubtitlesOrgSource> logger)
     {
-        private const string BaseUrl = "https://www.opensubtitles.org";
-        private const string SearchUrl = BaseUrl + "/en/search";
-        private const int PageSize = 40;
+        _httpFactory = httpFactory;
+        _logger = logger;
+    }
 
-        private readonly IHttpClientFactory _httpFactory;
-        private readonly ILogger<OpenSubtitlesOrgSource> _logger;
+    public string Id => SourceIds.OpenSubtitlesOrg;
+    public string DisplayName => "OpenSubtitles.org";
 
-        /// <summary>Initializes the OpenSubtitles.org scraper source.</summary>
-        public OpenSubtitlesOrgSource(IHttpClientFactory httpFactory, ILogger<OpenSubtitlesOrgSource> logger)
-        {
-            _httpFactory = httpFactory;
-            _logger = logger;
-        }
+    public async Task<IReadOnlyList<SubtitleResult>> SearchAsync(
+        SubtitleSearchRequest request,
+        CancellationToken cancellationToken)
+    {
+        var languages = request.Languages.Count > 0
+            ? request.Languages
+            : new List<string> { "en" };
 
-        /// <summary>Stable identifier for this subtitle source.</summary>
-        public string Id => SourceIds.OpenSubtitlesOrg;
+        var results = new List<SubtitleResult>();
+        var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        /// <summary>Human-readable name for this subtitle source.</summary>
-        public string DisplayName => "OpenSubtitles.org";
-
-        public async Task<IReadOnlyList<SubtitleResult>> SearchAsync(
-            SubtitleSearchRequest request,
-            CancellationToken cancellationToken)
-        {
-            var results = new List<SubtitleResult>();
-
-            // Build one query per requested language (site accepts one lang at a time)
-            var languages = request.Languages.Count > 0
-                ? request.Languages
-                : new List<string> { "en" };
-
-            foreach (var lang in languages)
-            {
-                try
-                {
-                    int page = 1;
-                    bool hasMore = true;
-
-                    while (hasMore && results.Count < 100) // Limit to prevent excessive requests
-                    {
-                        var url = BuildSearchUrl(request.Title ?? request.SeriesTitle ?? string.Empty, lang, page);
-                        _logger.LogDebug("[OpenSubtitlesOrg] GET {Url}", url);
-                        var html = await FetchHtmlAsync(url, cancellationToken).ConfigureAwait(false);
-                        var parsed = ParseResultsPage(html, lang, out var paginationInfo);
-                        results.AddRange(parsed);
-
-                        hasMore = paginationInfo.HasMore;
-                        page = paginationInfo.NextPage ?? page + 1;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "[OpenSubtitlesOrg] Search failed for language {Lang}", lang);
-                }
-            }
-
-            // Sort results: exact match boost, then subtitle count, then title
-            results = results.OrderByDescending(r => IsExactMatch(r.ReleaseName, request.Title ?? request.SeriesTitle ?? string.Empty))
-                             .ThenByDescending(r => r.DownloadCount)
-                             .ThenBy(r => r.ReleaseName)
-                             .ToList();
-
-            return results
-                .Where(r => r.DownloadCount >= request.MinDownloadCount)
-                .ToList();
-        }
-
-        public async Task<string?> DownloadAsync(SubtitleResult result, CancellationToken cancellationToken)
+        foreach (var lang in languages)
         {
             try
             {
-                var client = _httpFactory.CreateClient("JellySub");
-                var response = await client.GetAsync(result.DownloadUrl, cancellationToken).ConfigureAwait(false);
-                response.EnsureSuccessStatusCode();
-
-                var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
-
-                // The response is always a zip archive
-                return ExtractSrtFromZip(bytes);
+                var langResults = await SearchLanguageAsync(request, lang, cancellationToken).ConfigureAwait(false);
+                foreach (var result in langResults)
+                {
+                    if (seenIds.Add($"{result.SourceId}:{result.Id}"))
+                    {
+                        results.Add(result);
+                    }
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[OpenSubtitlesOrg] Download failed for {Url}", result.DownloadUrl);
-                return null;
+                _logger.LogWarning(ex, "[OpenSubtitlesOrg] Search failed for language {Lang}", lang);
             }
         }
 
-        // ─────────────────────────────────────────────────────────────────────────
-        // Helpers (mirroring subtitle-finder Node.js logic)
-        // ─────────────────────────────────────────────────────────────────────────
+        return results
+            .Where(r => r.DownloadCount >= request.MinDownloadCount)
+            .ToList();
+    }
 
-        private static string BuildSearchUrl(string query, string language, int page)
-        {
-            // Node.js: const normalizedQuery = encodeURIComponent(query.trim());
-            var normalizedQuery = Uri.EscapeDataString(query.Trim());
-            // Node.js: const languageSegment = language === 'all' ? '' : `/sublanguageid-${language}`;
-            var languageSegment = language.Equals("all", StringComparison.OrdinalIgnoreCase) ? "" : $"/sublanguageid-{language}";
-            // Node.js: const base = `${BASE_URL}/en/search${languageSegment}/moviename-${normalizedQuery}`;
-            var baseUrl = $"{SearchUrl}{languageSegment}/moviename-{normalizedQuery}";
-            if (page <= 1)
-                return baseUrl;
-            // Node.js: return `${base}/offset-${(page - 1) * PAGE_SIZE}`;
-            return $"{baseUrl}/offset-{(page - 1) * PageSize}";
-        }
-
-        private async Task<string> FetchHtmlAsync(string url, CancellationToken ct)
+    public async Task<string?> DownloadAsync(SubtitleResult result, CancellationToken cancellationToken)
+    {
+        try
         {
             var client = _httpFactory.CreateClient("JellySub");
-            // Mimic browser Accept header to avoid 406 responses
-            client.DefaultRequestHeaders.TryAddWithoutValidation("Accept",
-                "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-            // Set a reasonable user agent
-            client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
-            var response = await client.GetAsync(url, ct).ConfigureAwait(false);
+            using var req = new HttpRequestMessage(HttpMethod.Get, result.DownloadUrl);
+            req.Headers.TryAddWithoutValidation("Accept", "application/octet-stream, application/zip, text/plain;q=0.9, */*;q=0.8");
+
+            using var response = await client.SendAsync(req, cancellationToken).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+
+            var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+            return ExtractSubtitleText(bytes, result.DownloadUrl);
         }
-
-        private List<SubtitleResult> ParseResultsPage(string html, string lang, out PaginationInfo paginationInfo)
+        catch (Exception ex)
         {
-            var results = new List<SubtitleResult>();
-            var doc = new HtmlDocument();
-            doc.LoadHtml(html);
+            _logger.LogError(ex, "[OpenSubtitlesOrg] Download failed for {Url}", result.DownloadUrl);
+            return null;
+        }
+    }
 
-            // Each result row in the search table: tr.change or tr.expandable within #search_results
-            var rows = doc.DocumentNode.SelectNodes(
-                "//table[@id='search_results']//tr[contains(@class,'change') or contains(@class,'expandable')]");
+    // ─────────────────────────────────────────────────────────────────────────
+    // Search helpers
+    // ─────────────────────────────────────────────────────────────────────────
 
-            if (rows is null)
+    private async Task<IReadOnlyList<SubtitleResult>> SearchLanguageAsync(
+        SubtitleSearchRequest request,
+        string lang,
+        CancellationToken ct)
+    {
+        var results = new List<SubtitleResult>();
+
+        // Prefer exact IMDb lookups when available; fall back to title search.
+        if (!string.IsNullOrWhiteSpace(request.ImdbId))
+        {
+            var imdbResults = await FetchResultsAsync(
+                BuildImdbSearchUrl(request.ImdbId, lang), request, ct).ConfigureAwait(false);
+            results.AddRange(imdbResults);
+
+            if (results.Count > 0)
             {
-                paginationInfo = new PaginationInfo { HasMore = false, NextPage = null };
                 return results;
             }
+        }
 
-            foreach (var row in rows)
-            {
-                try
-                {
-                    var parsed = ParseSubtitleRow(row);
-                    if (parsed == null) continue;
-
-                    // Override language with the requested lang (converted to 2-letter via LanguageMap)
-                    var twoLetter = LanguageMap.ToTwoLetter(lang.ToLowerInvariant());
-                    parsed.Language = twoLetter;
-                    parsed.LanguageName = LanguageMap.DisplayName(twoLetter);
-
-                    results.Add(parsed);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogDebug(ex, "[OpenSubtitlesOrg] Failed to parse a result row");
-                }
-            }
-
-            paginationInfo = ParseHasMore(html);
+        var title = BuildSearchTitle(request);
+        if (string.IsNullOrWhiteSpace(title))
+        {
             return results;
         }
 
-        private SubtitleResult? ParseSubtitleRow(HtmlNode row)
+        results.AddRange(await FetchResultsAsync(BuildTitleSearchUrl(title, lang), request, ct).ConfigureAwait(false));
+        return results;
+    }
+
+    private async Task<IReadOnlyList<SubtitleResult>> FetchResultsAsync(
+        string url,
+        SubtitleSearchRequest request,
+        CancellationToken ct)
+    {
+        _logger.LogDebug("[OpenSubtitlesOrg] GET {Url}", url);
+
+        var json = await FetchJsonAsync(url, ct).ConfigureAwait(false);
+        var parsed = ParseResults(json, request);
+
+        return parsed;
+    }
+
+    private async Task<string> FetchJsonAsync(string url, CancellationToken ct)
+    {
+        var client = _httpFactory.CreateClient("JellySub");
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.TryAddWithoutValidation("Accept", "application/json, text/plain, */*; q=0.01");
+        req.Headers.TryAddWithoutValidation("X-User-Agent", "JellySub/1.0");
+
+        using var response = await client.SendAsync(req, ct).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+    }
+
+    private static string BuildImdbSearchUrl(string imdbId, string lang)
+    {
+        return $"{BaseUrl}/search/imdbid-{NormalizeImdbId(imdbId)}/sublanguageid-{LanguageMap.ToThreeLetter(lang)}";
+    }
+
+    private static string BuildTitleSearchUrl(string title, string lang)
+    {
+        return $"{BaseUrl}/search/query-{Uri.EscapeDataString(title)}/sublanguageid-{LanguageMap.ToThreeLetter(lang)}";
+    }
+
+    private static string BuildSearchTitle(SubtitleSearchRequest request)
+    {
+        var title = request.SeasonNumber.HasValue
+            ? request.SeriesTitle ?? request.Title
+            : request.Title;
+
+        if (string.IsNullOrWhiteSpace(title))
         {
-            var cells = row.SelectNodes("td");
-            if (cells == null || cells.Count < 5)
-                return null;
+            return string.Empty;
+        }
 
-            // --- Title / ID ---
-            var titleCell = cells[0];
-            var titleLink = titleCell.SelectSingleNode(".//a[contains(@class,'bnone')]");
-            if (titleLink == null)
-                return null;
+        if (request.SeasonNumber.HasValue)
+        {
+            return title.Trim();
+        }
 
-            var href = titleLink.GetAttributeValue("href", string.Empty);
-            var subtitleId = ExtractSubtitleId(href);
-            if (string.IsNullOrEmpty(subtitleId))
-                return null;
+        return request.Year.HasValue
+            ? $"{title.Trim()} {request.Year.Value}"
+            : title.Trim();
+    }
 
-            var rawTitle = titleLink.InnerText.Trim();
-            var titleMatch = Regex.Match(rawTitle, @"^(.*?)(?:\s*\((\d{4})\))?$");
-            var title = titleMatch.Success ? titleMatch.Groups[1].Value.Trim() : rawTitle;
-            var year = titleMatch.Success ? titleMatch.Groups[2].Value : string.Empty;
+    private List<SubtitleResult> ParseResults(string json, SubtitleSearchRequest request)
+    {
+        var results = new List<SubtitleResult>();
+        var root = JsonNode.Parse(json) as JsonArray;
+        if (root is null)
+        {
+            return results;
+        }
 
-            var movieId = $"{Slugify(title)}-{year}".TrimEnd('-');
-
-            // --- Release name ---
-            var releaseNameSpan = titleCell.SelectSingleNode(".//span[@title]");
-            var releaseName = releaseNameSpan != null
-                ? HtmlEntity.DeEntitize(releaseNameSpan.GetAttributeValue("title", string.Empty).Trim())
-                : HtmlEntity.DeEntitize(titleLink.InnerText.Trim());
-
-            // --- Download count ---
-            var dlCount = 0;
-            var dlCell = cells[4];
-            var dlLink = dlCell.SelectSingleNode(".//a");
-            if (dlLink != null && int.TryParse(dlLink.InnerText.Replace(",", "").Trim(), out var parsedDlCount))
+        foreach (var node in root.OfType<JsonObject>())
+        {
+            try
             {
-                dlCount = parsedDlCount;
-            }
-
-            // --- CDs (from cell index 2) ---
-            var cds = cells[2].InnerText.Trim();
-
-            // --- Uploaded at and FPS (from cell index 3) ---
-            var dateCell = cells[3];
-            var uploadedAt = string.Empty;
-            var fps = string.Empty;
-
-            var timeNode = dateCell.SelectSingleNode(".//time");
-            if (timeNode != null)
-            {
-                uploadedAt = timeNode.InnerText.Trim();
-            }
-
-            var fpsSpan = dateCell.SelectSingleNode(".//span[contains(@class,'p')]");
-            if (fpsSpan != null)
-            {
-                fps = fpsSpan.InnerText.Trim();
-            }
-            else
-            {
-                // Fallback to first span if no p class
-                var firstSpan = dateCell.SelectSingleNode(".//span");
-                if (firstSpan != null)
+                var result = MapResult(node, request);
+                if (result is not null)
                 {
-                    fps = firstSpan.InnerText.Trim();
+                    results.Add(result);
                 }
             }
-
-            // --- Format ---
-            var formatText = string.Empty;
-            var formatSpan = dlCell.SelectSingleNode(".//span[contains(@class,'p')]");
-            if (formatSpan != null)
+            catch (Exception ex)
             {
-                formatText = formatSpan.InnerText.Trim();
+                _logger.LogDebug(ex, "[OpenSubtitlesOrg] Failed to parse a result row");
             }
-            else
-            {
-                // Fallback: take the cell text and remove the download count
-                var cellText = HtmlEntity.DeEntitize(dlCell.InnerText.Trim());
-                formatText = cellText.Replace(dlCount.ToString(), "").Trim();
-            }
-
-            if (formatText.Contains(' '))
-            {
-                var parts = formatText.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                formatText = parts[parts.Length - 1];
-            }
-
-            // --- Rating ---
-            var rating = cells.Count > 5 ? cells[5].InnerText.Trim() : string.Empty;
-
-            // --- Language from img alt ---
-            var langImg = row.SelectSingleNode(".//td[contains(@class,'a4')]//img");
-            var langRaw = langImg?.GetAttributeValue("alt", string.Empty) ?? string.Empty;
-            // langRaw is the 3-letter code from the site; we will override later in ParseResultsPage
-            // Keep it for now; we'll override with requested language.
-
-            // --- Detail URL and Download URL ---
-            var detailUrl = string.Empty;
-            if (!string.IsNullOrEmpty(href))
-            {
-                detailUrl = new Uri(new Uri(BaseUrl), href).ToString();
-            }
-
-            var downloadUrl = string.Empty;
-            if (!string.IsNullOrEmpty(subtitleId))
-            {
-                downloadUrl = $"https://dl.opensubtitles.org/en/download/sub/{subtitleId}";
-            }
-
-            return new SubtitleResult
-            {
-                Id = subtitleId,
-                SourceId = Id,
-                ReleaseName = releaseName,
-                Language = string.Empty, // will be overridden
-                LanguageName = string.Empty,
-                DownloadCount = dlCount,
-                Uploader = string.Empty, // Not extracted in the new logic; left empty
-                UploadDate = null, // Not parsed in the new logic; left null
-                Format = formatText,
-                DownloadUrl = downloadUrl,
-                ReleaseGroup = ExtractReleaseGroup(releaseName)
-            };
         }
 
-        private static string ExtractSubtitleId(string href)
+        return results;
+    }
+
+    private SubtitleResult? MapResult(JsonObject item, SubtitleSearchRequest request)
+    {
+        var languageCode = FirstNonEmpty(item["ISO639"]?.ToString(), item["SubLanguageID"]?.ToString(), item["LanguageName"]?.ToString());
+        if (string.IsNullOrWhiteSpace(languageCode))
         {
-            // href pattern: /en/subtitles/1234567/title-en
-            var match = Regex.Match(href, @"/subtitles/(\d+)/");
-            return match.Success ? match.Groups[1].Value : string.Empty;
+            return null;
         }
 
-        private static string ExtractReleaseGroup(string releaseName)
+        var twoLetter = LanguageMap.ToTwoLetter(languageCode.ToLowerInvariant());
+        if (request.Languages.Count > 0 &&
+            !request.Languages.Contains(twoLetter, StringComparer.OrdinalIgnoreCase))
         {
-            // Common pattern: "ShowName.S01E01.1080p.BluRay.x264-GROUP"  →  "1080p.BluRay.x264-GROUP"
-            // Capture everything from a known quality tag onward
-            var match = Regex.Match(releaseName,
-                @"((?:480|576|720|1080|2160)[ip].*)",
-                RegexOptions.IgnoreCase);
-            return match.Success ? match.Groups[1].Value : string.Empty;
+            return null;
         }
 
-        private static string? ExtractSrtFromZip(byte[] zipBytes)
+        var season = GetInt(item, "SeriesSeason");
+        var episode = GetInt(item, "SeriesEpisode");
+        if (request.SeasonNumber.HasValue)
         {
-            using var ms = new MemoryStream(zipBytes);
-            using var zip = new ZipArchive(ms, ZipArchiveMode.Read);
+            if (season.GetValueOrDefault() <= 0 || season.Value != request.SeasonNumber.Value)
+            {
+                return null;
+            }
 
-            // Prefer .srt; fall back to first subtitle-like entry
-            var entry = zip.Entries.FirstOrDefault(e =>
-                            e.FullName.EndsWith(".srt", StringComparison.OrdinalIgnoreCase))
-                         ?? zip.Entries.FirstOrDefault(e =>
-                            e.FullName.EndsWith(".sub", StringComparison.OrdinalIgnoreCase));
+            if (request.EpisodeNumber.HasValue &&
+                (episode.GetValueOrDefault() <= 0 || episode.Value != request.EpisodeNumber.Value))
+            {
+                return null;
+            }
+        }
 
-            if (entry is null) return null;
+        var movieYear = GetInt(item, "MovieYear");
+        if (!request.SeasonNumber.HasValue && request.Year.HasValue && movieYear.HasValue && movieYear.Value != request.Year.Value)
+        {
+            return null;
+        }
 
-            using var sr = new StreamReader(entry.Open());
+        var subtitleId = FirstNonEmpty(item["IDSubtitle"]?.ToString(), item["IDSubtitleFile"]?.ToString());
+        if (string.IsNullOrWhiteSpace(subtitleId))
+        {
+            return null;
+        }
+
+        var releaseName = FirstNonEmpty(
+            item["MovieReleaseName"]?.ToString(),
+            item["SubFileName"]?.ToString(),
+            item["MovieName"]?.ToString(),
+            subtitleId);
+
+        var downloadUrl = FirstNonEmpty(item["ZipDownloadLink"]?.ToString(), item["SubDownloadLink"]?.ToString());
+        if (string.IsNullOrWhiteSpace(downloadUrl))
+        {
+            return null;
+        }
+
+        var downloadCount = GetInt(item, "SubDownloadsCnt") ?? 0;
+        var uploadDate = GetDateTime(item, "SubAddDate");
+        var matchedBy = item["MatchedBy"]?.ToString() ?? string.Empty;
+        var releaseGroup = FirstNonEmpty(item["InfoReleaseGroup"]?.ToString(), ExtractReleaseGroup(releaseName));
+
+        return new SubtitleResult
+        {
+            Id = subtitleId,
+            SourceId = Id,
+            ReleaseName = releaseName,
+            Language = twoLetter,
+            LanguageName = LanguageMap.DisplayName(twoLetter),
+            DownloadCount = downloadCount,
+            Uploader = item["UserNickName"]?.ToString() ?? string.Empty,
+            UploadDate = uploadDate,
+            Format = item["SubFormat"]?.ToString() ?? "srt",
+            DownloadUrl = downloadUrl,
+            ReleaseGroup = releaseGroup,
+            IsHashMatch = matchedBy.Equals("moviehash", StringComparison.OrdinalIgnoreCase),
+            IsHearingImpaired = GetBool(item, "SubHearingImpaired"),
+            IsMachineTranslated = GetBool(item, "SubAutoTranslation"),
+        };
+    }
+
+    private static int? GetInt(JsonObject item, string key)
+    {
+        var value = item[key]?.ToString();
+        return int.TryParse(value, out var parsed) ? parsed : null;
+    }
+
+    private static DateTime? GetDateTime(JsonObject item, string key)
+    {
+        var value = item[key]?.ToString();
+        return DateTime.TryParse(value, out var parsed) ? parsed : null;
+    }
+
+    private static bool GetBool(JsonObject item, string key)
+    {
+        var value = item[key]?.ToString();
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        return value.Equals("1", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("true", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("yes", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+        => values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v)) ?? string.Empty;
+
+    private static string NormalizeImdbId(string imdbId)
+    {
+        var trimmed = imdbId.Trim();
+        var numeric = trimmed.StartsWith("tt", StringComparison.OrdinalIgnoreCase)
+            ? trimmed[2..]
+            : trimmed;
+
+        // OpenSubtitles REST expects the numeric IMDb id (e.g. 3881914), not the tt-prefixed form.
+        return new string(numeric.Where(char.IsDigit).ToArray());
+    }
+
+    private static string ExtractReleaseGroup(string releaseName)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(
+            releaseName,
+            @"((?:480|576|720|1080|2160)[ip].*)",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        return match.Success ? match.Groups[1].Value : string.Empty;
+    }
+
+    private static string? ExtractSubtitleText(byte[] bytes, string? downloadUrl)
+    {
+        if (LooksLikeZip(bytes, downloadUrl))
+        {
+            try
+            {
+                using var ms = new MemoryStream(bytes);
+                using var zip = new ZipArchive(ms, ZipArchiveMode.Read);
+
+                var entry = zip.Entries.FirstOrDefault(e => e.FullName.EndsWith(".srt", StringComparison.OrdinalIgnoreCase))
+                         ?? zip.Entries.FirstOrDefault(e => e.FullName.EndsWith(".sub", StringComparison.OrdinalIgnoreCase));
+                if (entry is null)
+                {
+                    return null;
+                }
+
+                using var sr = new StreamReader(entry.Open(), Encoding.UTF8, true);
+                return sr.ReadToEnd();
+            }
+            catch
+            {
+                // fall through to gzip attempt
+            }
+        }
+
+        if (LooksLikeGzip(bytes, downloadUrl))
+        {
+            using var ms = new MemoryStream(bytes);
+            using var gzip = new GZipStream(ms, CompressionMode.Decompress);
+            using var sr = new StreamReader(gzip, Encoding.UTF8, true);
             return sr.ReadToEnd();
         }
 
-        private static bool IsExactMatch(string releaseName, string query)
-        {
-            if (string.IsNullOrEmpty(query))
-                return false;
-
-            var normalizedRelease = NormalizeForMatch(releaseName);
-            var normalizedQuery = NormalizeForMatch(query);
-            return normalizedRelease == normalizedQuery ||
-                   normalizedRelease == $"the {normalizedQuery}";
-        }
-
-        private static string NormalizeWhitespace(string value)
-        {
-            if (value == null) return string.Empty;
-            return Regex.Replace(value, @"\s+", " ").Trim();
-        }
-
-        private static string NormalizeForMatch(string value)
-        {
-            if (value == null) return string.Empty;
-            var normalized = NormalizeWhitespace(value).ToLowerInvariant();
-            return Regex.Replace(normalized, @"[^a-z0-9 ]", "");
-        }
-
-        private static string Slugify(string value)
-        {
-            if (value == null) return string.Empty;
-            var normalized = NormalizeWhitespace(value).ToLowerInvariant();
-            var slug = Regex.Replace(normalized, @"[^a-z0-9]+", "-");
-            return slug.TrimStart('-').TrimEnd('-');
-        }
-
-        private PaginationInfo ParseHasMore(string html)
-        {
-            var doc = new HtmlDocument();
-            doc.LoadHtml(html);
-
-            var nextRel = doc.DocumentNode.SelectSingleNode("//a[@rel='next']");
-            var nextText = doc.DocumentNode.SelectNodes("//a")
-                ?.FirstOrDefault(a => Regex.IsMatch(a.InnerText, @"next|>>", RegexOptions.IgnoreCase));
-
-            var nextLink = nextRel ?? nextText;
-            if (nextLink == null)
-                return new PaginationInfo { HasMore = false, NextPage = null };
-
-            var href = nextLink.GetAttributeValue("href", string.Empty);
-            var offsetMatch = Regex.Match(href, @"/offset-(\d+)");
-            if (offsetMatch.Success)
-            {
-                var offset = int.Parse(offsetMatch.Groups[1].Value);
-                return new PaginationInfo
-                {
-                    HasMore = true,
-                    NextPage = offset / PageSize + 1
-                };
-            }
-
-            return new PaginationInfo { HasMore = true, NextPage = null }; // fallback
-        }
-
-        private class PaginationInfo
-        {
-            public bool HasMore { get; set; }
-            public int? NextPage { get; set; }
-        }
+        return null;
     }
+
+    private static bool LooksLikeZip(byte[] bytes, string? downloadUrl)
+        => bytes.Length >= 4
+        && bytes[0] == 0x50
+        && bytes[1] == 0x4B
+        && (downloadUrl?.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ?? false || bytes[2] == 0x03 || bytes[2] == 0x05 || bytes[2] == 0x07);
+
+    private static bool LooksLikeGzip(byte[] bytes, string? downloadUrl)
+        => bytes.Length >= 2
+        && bytes[0] == 0x1F
+        && bytes[1] == 0x8B
+        || (downloadUrl?.EndsWith(".gz", StringComparison.OrdinalIgnoreCase) ?? false);
 }
