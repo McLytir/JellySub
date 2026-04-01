@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.20] – 2026-04-01
+
+### Fixed
+- OpenSubtitles title searches now avoid the provider's broken canonical redirect behavior. Query titles are normalized to lowercase before request, and malformed redirects such as `https://_/search/...` are repaired and retried against the original host.
+
 ## [v1.0.19] – 2026-04-01
 
 ### Fixed
