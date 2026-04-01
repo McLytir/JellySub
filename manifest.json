@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/assets/logo.png",
     "versions": [
       {
+        "version": "1.0.22.0",
+        "changelog": "\n### Fixed\n- Search results page now tolerates both camelCase and PascalCase API payloads. This fixes the case where the backend was returning valid subtitle results but the web UI rendered nothing because it only looked for lowercase JSON property names.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/McLytir/JellySub/releases/download/v1.0.22/jellysub_1.0.22.0.zip",
+        "checksum": "053a949eae4f54f0d85e5a51f6acac6e",
+        "timestamp": "2026-04-01T12:47:38Z"
+      },
+      {
         "version": "1.0.21.0",
         "changelog": "\n### Changed\n- Added search-pipeline result-count logging for OpenSubtitles, the aggregator, and the API endpoints. This makes it explicit whether results are being returned by the provider, filtered out in JellySub, or lost later in the UI.",
         "targetAbi": "10.10.0.0",
