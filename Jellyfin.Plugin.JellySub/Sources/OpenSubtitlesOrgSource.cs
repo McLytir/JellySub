@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading;
@@ -29,27 +30,46 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
 {
     private const string BaseUrl = "https://rest.opensubtitles.org";
 
-    private static readonly HttpClient DirectHttpClient = CreateDirectHttpClient();
-
     private readonly IHttpClientFactory _httpFactory;
     private readonly ILogger<OpenSubtitlesOrgSource> _logger;
+    private readonly HttpClient _directClient;
 
     /// <summary>Initializes the OpenSubtitles REST-backed subtitle source.</summary>
     public OpenSubtitlesOrgSource(IHttpClientFactory httpFactory, ILogger<OpenSubtitlesOrgSource> logger)
     {
         _httpFactory = httpFactory;
         _logger = logger;
+        _directClient = CreateDirectHttpClient();
     }
 
-    private static HttpClient CreateDirectHttpClient()
+    private HttpClient CreateDirectHttpClient()
     {
-        var handler = new HttpClientHandler
+        var handler = new SocketsHttpHandler
         {
             UseProxy = false,
             AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
+            ConnectCallback = async (context, cancellationToken) =>
+            {
+                _logger.LogInformation(
+                    "[OpenSubtitlesOrg] Direct connect to {Host}:{Port}",
+                    context.DnsEndPoint.Host,
+                    context.DnsEndPoint.Port);
+
+                var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                try
+                {
+                    await socket.ConnectAsync(context.DnsEndPoint, cancellationToken).ConfigureAwait(false);
+                    return new NetworkStream(socket, ownsSocket: true);
+                }
+                catch
+                {
+                    socket.Dispose();
+                    throw;
+                }
+            },
         };
 
-        var client = new HttpClient(handler, disposeHandler: false);
+        var client = new HttpClient(handler, disposeHandler: true);
         client.DefaultRequestHeaders.TryAddWithoutValidation(
             "User-Agent",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
@@ -108,7 +128,8 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
             using var req = new HttpRequestMessage(HttpMethod.Get, result.DownloadUrl);
             req.Headers.TryAddWithoutValidation("Accept", "application/octet-stream, application/zip, text/plain;q=0.9, */*;q=0.8");
 
-            using var response = await DirectHttpClient.SendAsync(req, cancellationToken).ConfigureAwait(false);
+            _logger.LogInformation("[OpenSubtitlesOrg] Download request {Url}", req.RequestUri?.ToString());
+            using var response = await _directClient.SendAsync(req, cancellationToken).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
             var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
@@ -174,7 +195,11 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
         req.Headers.TryAddWithoutValidation("Accept", "application/json, text/plain, */*; q=0.01");
         req.Headers.TryAddWithoutValidation("X-User-Agent", "JellySub/1.0");
 
-        using var response = await DirectHttpClient.SendAsync(req, ct).ConfigureAwait(false);
+        _logger.LogInformation(
+            "[OpenSubtitlesOrg] Search request {Url} host {Host}",
+            req.RequestUri?.ToString(),
+            req.RequestUri?.Host);
+        using var response = await _directClient.SendAsync(req, ct).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
     }
