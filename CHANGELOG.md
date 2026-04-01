@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.25] – 2026-04-02
+
+### Fixed
+- Search page now explicitly requests JSON and parses string responses defensively. This fixes the case where the backend returned valid search results but Jellyfin's web client handed the page a raw JSON string, causing the UI to treat the result list as empty.
+
 ## [v1.0.24] – 2026-04-01
 
 ### Fixed
