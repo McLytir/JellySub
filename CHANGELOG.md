@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.17] – 2026-04-01
+
+### Fixed
+- OpenSubtitles requests now use a dedicated direct HttpClient inside the source itself, bypassing the factory pipeline entirely. This is an extra hardening step for systems where the ambient/runtime HTTP stack was still trying to resolve an invalid proxy host such as `_`.
+
 ## [v1.0.16] – 2026-04-01
 
 ### Fixed
