@@ -46,6 +46,7 @@ public sealed class JellySubController : ControllerBase
     private readonly IEnumerable<ISubtitleSource> _sources;
     private readonly ILogger<JellySubController> _logger;
 
+    /// <summary>Initializes the JellySub API controller.</summary>
     public JellySubController(
         ILibraryManager libraryManager,
         SubtitleAggregator aggregator,
@@ -506,6 +507,7 @@ public sealed class JellySubController : ControllerBase
     public IActionResult GetConfig()
         => Ok(Plugin.Instance!.Configuration);
 
+    /// <summary>Returns detected Jellyfin web roots and their patch status.</summary>
     [HttpGet("webclient/status")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult WebClientStatus()
@@ -520,6 +522,7 @@ public sealed class JellySubController : ControllerBase
         });
     }
 
+    /// <summary>Downloads an installer or uninstaller script for patching the Jellyfin web client.</summary>
     [HttpGet("webclient/script")]
     [Authorize(Policy = "RequiresElevation")]
     public IActionResult DownloadWebClientScript([FromQuery] string platform, [FromQuery] string? mode)
@@ -552,6 +555,7 @@ public sealed class JellySubController : ControllerBase
         return File(Encoding.UTF8.GetBytes(content), "application/octet-stream", fileName);
     }
 
+    /// <summary>Patches default Jellyfin web roots on the current machine with the JellySub web client script.</summary>
     [HttpPost("webclient/install-defaults")]
     [Authorize(Policy = "RequiresElevation")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -569,6 +573,7 @@ public sealed class JellySubController : ControllerBase
         });
     }
 
+    /// <summary>Removes the JellySub web client script from default Jellyfin web roots on the current machine.</summary>
     [HttpPost("webclient/uninstall-defaults")]
     [Authorize(Policy = "RequiresElevation")]
     [ProducesResponseType(StatusCodes.Status200OK)]

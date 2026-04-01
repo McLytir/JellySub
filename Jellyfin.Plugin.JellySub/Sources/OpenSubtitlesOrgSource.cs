@@ -26,13 +26,17 @@ namespace Jellyfin.Plugin.JellySub.Sources
         private readonly IHttpClientFactory _httpFactory;
         private readonly ILogger<OpenSubtitlesOrgSource> _logger;
 
+        /// <summary>Initializes the OpenSubtitles.org scraper source.</summary>
         public OpenSubtitlesOrgSource(IHttpClientFactory httpFactory, ILogger<OpenSubtitlesOrgSource> logger)
         {
             _httpFactory = httpFactory;
             _logger = logger;
         }
 
+        /// <summary>Stable identifier for this subtitle source.</summary>
         public string Id => SourceIds.OpenSubtitlesOrg;
+
+        /// <summary>Human-readable name for this subtitle source.</summary>
         public string DisplayName => "OpenSubtitles.org";
 
         public async Task<IReadOnlyList<SubtitleResult>> SearchAsync(

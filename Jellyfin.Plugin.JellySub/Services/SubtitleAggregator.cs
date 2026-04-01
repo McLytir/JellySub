@@ -18,6 +18,7 @@ public sealed class SubtitleAggregator
     private readonly IEnumerable<ISubtitleSource> _sources;
     private readonly ILogger<SubtitleAggregator> _logger;
 
+    /// <summary>Initializes the subtitle aggregator.</summary>
     public SubtitleAggregator(
         IEnumerable<ISubtitleSource> sources,
         ILogger<SubtitleAggregator> logger)

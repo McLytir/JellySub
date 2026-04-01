@@ -19,6 +19,7 @@ public sealed class SubtitleFileService
     private readonly IEnumerable<ISubtitleSource> _sources;
     private readonly ILogger<SubtitleFileService> _logger;
 
+    /// <summary>Initializes the subtitle file service.</summary>
     public SubtitleFileService(
         IEnumerable<ISubtitleSource> sources,
         ILogger<SubtitleFileService> logger)

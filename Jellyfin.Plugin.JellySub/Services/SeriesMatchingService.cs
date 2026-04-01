@@ -21,6 +21,7 @@ public sealed class SeriesMatchingService
     private readonly SubtitleAggregator _aggregator;
     private readonly ILogger<SeriesMatchingService> _logger;
 
+    /// <summary>Initializes the series subtitle matching service.</summary>
     public SeriesMatchingService(
         SubtitleAggregator aggregator,
         ILogger<SeriesMatchingService> logger)
