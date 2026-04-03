@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.27] – 2026-04-03
+
+### Changed
+- Unified single-item search, series/folder batch download, and library scan under one JellySub Operations page with in-page section switching.
+- Kept the old batch/scan routes as compatibility shims so stale links still land on the new unified page.
+
+### Fixed
+- Context-menu and settings-page navigation now open the correct unified JellySub flow (`single`, `batch`, or `scan`) instead of scattering across separate pages.
+- Assisted search once again preserves and visibly fills the Jellyfin item ID when launched from the web-client action, so the page opens with the proper context and auto-search can run.
+
 ## [v1.0.26] – 2026-04-02
 
 ### Fixed

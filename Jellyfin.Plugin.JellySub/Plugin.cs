@@ -44,16 +44,14 @@ public sealed class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             new PluginPageInfo { Name = "jellysub", DisplayName = "JellySub Settings", EnableInMainMenu = true, MenuSection = "plugins", MenuIcon = "settings", EmbeddedResourcePath = $"{ns}.Web.config.html" },
             new PluginPageInfo { Name = "jellysubjs",       EmbeddedResourcePath = $"{ns}.Web.config.js"   },
 
-            // Subtitle search (manual + assisted)
-            new PluginPageInfo { Name = "jellysubsearchv3",   DisplayName = "Subtitle Search", EnableInMainMenu = true, MenuSection = "plugins", MenuIcon = "subtitles", EmbeddedResourcePath = $"{ns}.Web.search.html" },
+            // Unified operations page (single search + batch + scan)
+            new PluginPageInfo { Name = "jellysubsearchv3",   DisplayName = "JellySub Operations", EnableInMainMenu = true, MenuSection = "plugins", MenuIcon = "subtitles", EmbeddedResourcePath = $"{ns}.Web.search.html" },
             new PluginPageInfo { Name = "jellysubsearchjsv3", EmbeddedResourcePath = $"{ns}.Web.search.js"   },
 
-            // Series / folder batch download
-            new PluginPageInfo { Name = "jellysubseries",   DisplayName = "Batch Subtitles", EnableInMainMenu = true, MenuSection = "plugins", MenuIcon = "folder", EmbeddedResourcePath = $"{ns}.Web.series.html" },
+            // Legacy routes kept for backward-compatible redirects into the unified page
+            new PluginPageInfo { Name = "jellysubseries",   DisplayName = "Batch Subtitles", EnableInMainMenu = false, MenuSection = "plugins", MenuIcon = "folder", EmbeddedResourcePath = $"{ns}.Web.series.html" },
             new PluginPageInfo { Name = "jellysubseriesjs", EmbeddedResourcePath = $"{ns}.Web.series.js"   },
-
-            // Library scan
-            new PluginPageInfo { Name = "jellysubscan",     DisplayName = "Subtitle Scan", EnableInMainMenu = true, MenuSection = "plugins", MenuIcon = "search", EmbeddedResourcePath = $"{ns}.Web.scan.html"   },
+            new PluginPageInfo { Name = "jellysubscan",     DisplayName = "Subtitle Scan", EnableInMainMenu = false, MenuSection = "plugins", MenuIcon = "search", EmbeddedResourcePath = $"{ns}.Web.scan.html"   },
             new PluginPageInfo { Name = "jellysubscanjs",   EmbeddedResourcePath = $"{ns}.Web.scan.js"     },
         };
     }

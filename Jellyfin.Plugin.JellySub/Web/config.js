@@ -10,9 +10,9 @@ const ALL_SOURCES = [
 export default function (view) {
     let config = {};
 
-    view.querySelector('#navSearch').addEventListener('click', () => navigateTo('configurationpage?name=jellysubsearchv3'));
-    view.querySelector('#navSeries').addEventListener('click', () => navigateTo('configurationpage?name=jellysubseries'));
-    view.querySelector('#navScan').addEventListener('click', () => navigateTo('configurationpage?name=jellysubscan'));
+    view.querySelector('#navSearch').addEventListener('click', () => navigateTo('configurationpage?name=jellysubsearchv3&op=single'));
+    view.querySelector('#navSeries').addEventListener('click', () => navigateTo('configurationpage?name=jellysubsearchv3&op=batch'));
+    view.querySelector('#navScan').addEventListener('click', () => navigateTo('configurationpage?name=jellysubsearchv3&op=scan'));
 
     view.querySelector('#btnWebClientInstall').addEventListener('click', () => installWebClient(view));
     view.querySelector('#btnWebClientUninstall').addEventListener('click', () => uninstallWebClient(view));

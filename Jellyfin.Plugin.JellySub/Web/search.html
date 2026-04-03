@@ -6,75 +6,230 @@
   <div data-role="content">
     <div class="content-primary">
 
-      <!-- ── Header ─────────────────────────────────────────────────────── -->
       <div class="sectionTitleContainer flex align-items-center" style="margin-bottom:16px">
         <button is="emby-button" type="button" id="btnBackToConfig"
            class="button-alt" style="margin-right:12px;font-size:20px;min-width:auto;padding:0 10px">←</button>
-        <h2 class="sectionTitle" style="margin:0">🔍 Subtitle Search</h2>
-        <div id="modeToggle" style="margin-left:auto;display:flex;gap:6px">
-          <button is="emby-button" type="button" class="raised" id="btnAssisted">Assisted</button>
-          <button is="emby-button" type="button" class="raised button-alt" id="btnManual">Manual</button>
+        <div>
+          <h2 class="sectionTitle" style="margin:0">🎬 JellySub Operations</h2>
+          <div style="font-size:12px;color:#aaa;margin-top:4px">Single search, batch episode download, and library scan in one page.</div>
         </div>
       </div>
 
-      <!-- ── Assisted bar ───────────────────────────────────────────────── -->
-      <div id="assistedBar" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px">
-        <div class="inputContainer" style="flex:1;min-width:220px;margin:0">
-          <label class="inputLabel" for="itemIdInput">Jellyfin item</label>
-          <input is="emby-input" type="text" id="itemIdInput"
-                 placeholder="Auto-filled from Jellyfin (or paste a UUID manually)" />
-        </div>
-        <div class="inputContainer" style="width:130px;margin:0">
-          <label class="inputLabel" for="assistedLang">Language(s)</label>
-          <input is="emby-input" type="text" id="assistedLang" placeholder="en,fr" />
-        </div>
-        <button is="emby-button" type="button" class="raised" id="btnAssistedSearch">Search</button>
+      <div id="operationToggle" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px">
+        <button is="emby-button" type="button" class="raised" id="btnOpSingle">🔍 Single search</button>
+        <button is="emby-button" type="button" class="raised button-alt" id="btnOpBatch">📂 Batch subtitles</button>
+        <button is="emby-button" type="button" class="raised button-alt" id="btnOpScan">🔄 Library scan</button>
       </div>
 
-      <!-- ── Manual bar ────────────────────────────────────────────────── -->
-      <div id="manualBar" style="display:none;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px">
-        <div class="inputContainer" style="flex:2;min-width:220px;margin:0">
-          <label class="inputLabel" for="manualQuery">Title</label>
-          <input is="emby-input" type="text" id="manualQuery" placeholder="Movie or series name" />
-        </div>
-        <div class="inputContainer" style="width:60px;margin:0">
-          <label class="inputLabel" for="manualSeason">Season</label>
-          <input is="emby-input" type="number" id="manualSeason" placeholder="–" min="1" />
-        </div>
-        <div class="inputContainer" style="width:60px;margin:0">
-          <label class="inputLabel" for="manualEpisode">Episode</label>
-          <input is="emby-input" type="number" id="manualEpisode" placeholder="–" min="1" />
-        </div>
-        <div class="inputContainer" style="width:130px;margin:0">
-          <label class="inputLabel" for="manualLang">Language(s)</label>
-          <input is="emby-input" type="text" id="manualLang" placeholder="en,fr" />
-        </div>
-        <button is="emby-button" type="button" class="raised" id="btnManualSearch">Search</button>
-      </div>
-
-      <!-- ── Status / item info ─────────────────────────────────────────── -->
-      <div id="itemInfo" style="display:none;background:rgba(255,255,255,.05);border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:13px"></div>
-
-      <!-- ── Results table ──────────────────────────────────────────────── -->
-      <div id="resultsContainer" style="display:none">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <span id="resultCount" style="color:#aaa;font-size:13px"></span>
-          <div style="display:flex;gap:8px">
-            <button is="emby-button" type="button" class="raised button-alt" id="btnSelectAll">Select all</button>
-            <button is="emby-button" type="button" class="raised" id="btnDownloadSelected"
-                    disabled>Download selected (<span id="selCount">0</span>)</button>
+      <div id="singlePanel">
+        <div class="sectionTitleContainer flex align-items-center" style="margin-bottom:12px">
+          <h3 class="sectionTitle" style="margin:0">Single item subtitle search</h3>
+          <div id="modeToggle" style="margin-left:auto;display:flex;gap:6px">
+            <button is="emby-button" type="button" class="raised" id="btnAssisted">Assisted</button>
+            <button is="emby-button" type="button" class="raised button-alt" id="btnManual">Manual</button>
           </div>
         </div>
 
-        <div id="resultsList" style="border-radius:6px;overflow:hidden"></div>
+        <div id="assistedBar" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px">
+          <div class="inputContainer" style="flex:1;min-width:220px;margin:0">
+            <label class="inputLabel" for="itemIdInput">Jellyfin item</label>
+            <input is="emby-input" type="text" id="itemIdInput"
+                   placeholder="Auto-filled from Jellyfin (or paste a UUID manually)" />
+          </div>
+          <div class="inputContainer" style="width:130px;margin:0">
+            <label class="inputLabel" for="assistedLang">Language(s)</label>
+            <input is="emby-input" type="text" id="assistedLang" placeholder="en,fr" />
+          </div>
+          <button is="emby-button" type="button" class="raised" id="btnAssistedSearch">Search</button>
+        </div>
 
-        <div id="downloadProgress" style="display:none;margin-top:12px">
-          <p style="margin:4px 0;font-size:13px;color:#aaa" id="dlStatus"></p>
+        <div id="manualBar" style="display:none;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px">
+          <div class="inputContainer" style="flex:2;min-width:220px;margin:0">
+            <label class="inputLabel" for="manualQuery">Title</label>
+            <input is="emby-input" type="text" id="manualQuery" placeholder="Movie or series name" />
+          </div>
+          <div class="inputContainer" style="width:60px;margin:0">
+            <label class="inputLabel" for="manualSeason">Season</label>
+            <input is="emby-input" type="number" id="manualSeason" placeholder="–" min="1" />
+          </div>
+          <div class="inputContainer" style="width:60px;margin:0">
+            <label class="inputLabel" for="manualEpisode">Episode</label>
+            <input is="emby-input" type="number" id="manualEpisode" placeholder="–" min="1" />
+          </div>
+          <div class="inputContainer" style="width:130px;margin:0">
+            <label class="inputLabel" for="manualLang">Language(s)</label>
+            <input is="emby-input" type="text" id="manualLang" placeholder="en,fr" />
+          </div>
+          <button is="emby-button" type="button" class="raised" id="btnManualSearch">Search</button>
+        </div>
+
+        <div id="itemInfo" style="display:none;background:rgba(255,255,255,.05);border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:13px"></div>
+
+        <div id="resultsContainer" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:10px;flex-wrap:wrap">
+            <span id="resultCount" style="color:#aaa;font-size:13px"></span>
+            <div style="display:flex;gap:8px">
+              <button is="emby-button" type="button" class="raised button-alt" id="btnSelectAll">Select all</button>
+              <button is="emby-button" type="button" class="raised" id="btnDownloadSelected"
+                      disabled>Download selected (<span id="selCount">0</span>)</button>
+            </div>
+          </div>
+
+          <div id="resultsList" style="border-radius:6px;overflow:hidden"></div>
+
+          <div id="downloadProgress" style="display:none;margin-top:12px">
+            <p style="margin:4px 0;font-size:13px;color:#aaa" id="dlStatus"></p>
+          </div>
+        </div>
+
+        <div id="noResults" style="display:none;color:#aaa;padding:24px 0;text-align:center">
+          No subtitles found. Try a different query or enable more sources.
         </div>
       </div>
 
-      <div id="noResults" style="display:none;color:#aaa;padding:24px 0;text-align:center">
-        No subtitles found. Try a different query or enable more sources.
+      <div id="batchPanel" style="display:none">
+        <h3 class="sectionTitle" style="margin:0 0 12px">Series / folder batch download</h3>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px">
+          <div class="inputContainer" style="flex:1;min-width:240px;margin:0">
+            <label class="inputLabel" for="batchItemId">Series or Season — Jellyfin Item ID</label>
+            <input is="emby-input" type="text" id="batchItemId" placeholder="UUID of the series / season" />
+          </div>
+          <div class="inputContainer" style="width:130px;margin:0">
+            <label class="inputLabel" for="batchLang">Language</label>
+            <input is="emby-input" type="text" id="batchLang" placeholder="en" />
+          </div>
+          <div style="display:flex;gap:6px">
+            <button is="emby-button" type="button" class="raised" id="btnBatchModeAuto">Auto</button>
+            <button is="emby-button" type="button" class="raised button-alt" id="btnBatchModeGuided">Guided</button>
+          </div>
+          <button is="emby-button" type="button" class="raised" id="btnBatchAnalyze">Analyse</button>
+        </div>
+
+        <div id="batchModeHint" style="font-size:12px;color:#aaa;margin-bottom:12px;display:none"></div>
+
+        <div id="episodeSection" style="display:none">
+          <h3 class="sectionTitle" id="seriesName"></h3>
+
+          <div id="ep1Pane" style="display:none;background:rgba(255,255,255,.05);border-radius:6px;padding:14px;margin-bottom:16px">
+            <p style="margin:0 0 10px;font-weight:600">Step 1 — Pick subtitle for episode 1</p>
+            <div id="ep1Results"></div>
+            <div id="ep1Searching" style="display:none;color:#aaa;padding:8px 0">Searching…</div>
+          </div>
+
+          <div id="episodeList"></div>
+
+          <div id="testSection" style="display:none;background:rgba(255,255,255,.05);border-radius:6px;padding:14px;margin:16px 0">
+            <p style="margin:0 0 8px;font-weight:600">🎬 Test episode 1 in your local player</p>
+            <p style="font-size:12px;color:#aaa;margin:0 0 10px">
+              VLC command to run on the server machine (copy &amp; paste):
+            </p>
+            <code id="vlcCmd" style="display:block;background:rgba(0,0,0,.3);padding:8px;border-radius:4px;font-size:12px;word-break:break-all"></code>
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+              <button is="emby-button" type="button" class="raised button-alt" id="btnCopyCmd">Copy command</button>
+              <a is="emby-linkbutton" id="btnXspf" href="#" class="raised button-alt" download="jellysub-test.xspf">Download XSPF playlist</a>
+              <button is="emby-button" type="button" class="raised" id="btnSyncAfterTest">Re-sync after playtest…</button>
+            </div>
+
+            <div id="syncPanel" style="display:none;margin-top:12px;border-top:1px solid rgba(255,255,255,.1);padding-top:12px">
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+                <div class="selectContainer" style="min-width:200px;margin:0">
+                  <label class="selectLabel" for="syncTool">Sync tool</label>
+                  <select is="emby-select" id="syncTool" class="emby-select-withcolor">
+                    <option value="ffsubsync">ffsubsync (audio-based)</option>
+                    <option value="alass">alass (reference subtitle)</option>
+                  </select>
+                </div>
+                <div class="inputContainer" id="refSubRow" style="flex:1;min-width:200px;margin:0;display:none">
+                  <label class="inputLabel" for="refSubPath">Reference subtitle path (for alass)</label>
+                  <input is="emby-input" type="text" id="refSubPath" placeholder="/path/to/reference.en.srt" />
+                </div>
+                <button is="emby-button" type="button" class="raised" id="btnRunSync">Run sync</button>
+              </div>
+              <p id="syncStatus" style="margin:8px 0 0;font-size:12px;color:#aaa"></p>
+            </div>
+          </div>
+
+          <div id="confirmSection" style="display:none;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px">
+            <span id="matchSummary" style="color:#aaa;font-size:13px"></span>
+            <button is="emby-button" type="button" class="raised" id="btnConfirmDownload">
+              ✓ Download all
+            </button>
+          </div>
+
+          <div id="batchProgress" style="display:none;margin-top:14px">
+            <div style="background:rgba(255,255,255,.1);border-radius:4px;height:6px;margin-bottom:8px">
+              <div id="progressBar" style="background:#2196F3;height:100%;border-radius:4px;width:0;transition:width .3s"></div>
+            </div>
+            <p id="batchStatus" style="font-size:13px;color:#aaa;margin:0"></p>
+          </div>
+        </div>
+      </div>
+
+      <div id="scanPanel" style="display:none">
+        <h3 class="sectionTitle" style="margin:0 0 12px">Library scan</h3>
+        <p id="scanContextHint" style="display:none;color:#aaa;max-width:640px"></p>
+        <p style="color:#aaa;max-width:640px">
+          Scans your library, finds video files missing a subtitle for your configured preferred languages,
+          and auto-downloads the best available match from all enabled sources.
+        </p>
+
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px">
+          <button is="emby-button" type="button" class="raised" id="btnStartScan">
+            ▶ Start Scan
+          </button>
+          <span id="scanRunning" style="display:none;color:#2196F3">
+            ⟳ Scan in progress…
+          </span>
+          <button is="emby-button" type="button" class="raised button-alt" id="btnRefreshStatus">
+            Refresh status
+          </button>
+        </div>
+
+        <div id="statsBar" style="display:none;gap:24px;flex-wrap:wrap;margin-bottom:16px">
+          <div>
+            <div style="font-size:24px;font-weight:700;color:#4CAF50" id="statDownloaded">0</div>
+            <div style="font-size:11px;color:#aaa">Downloaded</div>
+          </div>
+          <div>
+            <div style="font-size:24px;font-weight:700;color:#aaa" id="statNotFound">0</div>
+            <div style="font-size:11px;color:#aaa">Not found</div>
+          </div>
+          <div>
+            <div style="font-size:24px;font-weight:700;color:#f44336" id="statFailed">0</div>
+            <div style="font-size:11px;color:#aaa">Failed</div>
+          </div>
+          <div>
+            <div style="font-size:24px;font-weight:700;color:#aaa" id="statSkipped">0</div>
+            <div style="font-size:11px;color:#aaa">Skipped</div>
+          </div>
+        </div>
+
+        <div id="logSection" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;flex-wrap:wrap">
+            <h3 class="sectionTitle" style="margin:0">Last scan log</h3>
+            <div style="display:flex;gap:8px">
+              <select is="emby-select" id="logFilter" class="emby-select-withcolor" style="font-size:12px">
+                <option value="">All</option>
+                <option value="Downloaded">Downloaded</option>
+                <option value="NotFound">Not found</option>
+                <option value="Failed">Failed</option>
+                <option value="Error">Error</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="border-radius:6px;overflow:hidden" id="logTable">
+            <div style="display:grid;grid-template-columns:1fr 60px 100px auto;gap:0;background:rgba(255,255,255,.06);padding:6px 12px;font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase">
+              <span>Item</span><span>Lang</span><span>Status</span><span>Path / Error</span>
+            </div>
+            <div id="logRows"></div>
+          </div>
+
+          <p id="emptyLog" style="display:none;color:#aaa;padding:16px 0;text-align:center">
+            No log entries yet.
+          </p>
+        </div>
       </div>
 
     </div>

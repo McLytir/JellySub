@@ -164,7 +164,7 @@
                         icon: 'subtitles',
                         name: 'JellySub: Search subtitles',
                         compactName: '💬 Subtitle search',
-                        run: () => this.navigate(`configurationpage?name=jellysubsearchv3&mode=assisted&itemId=${encodeURIComponent(context.itemId)}`)
+                        run: () => this.navigate(`configurationpage?name=jellysubsearchv3&op=single&mode=assisted&itemId=${encodeURIComponent(context.itemId)}`)
                     });
                 }
 
@@ -174,7 +174,7 @@
                         icon: 'folder',
                         name: 'JellySub: Batch subtitles',
                         compactName: '📂 Batch subtitles',
-                        run: () => this.navigate(`configurationpage?name=jellysubseries&itemId=${encodeURIComponent(context.itemId)}`)
+                        run: () => this.navigate(`configurationpage?name=jellysubsearchv3&op=batch&itemId=${encodeURIComponent(context.itemId)}`)
                     });
                 }
             }
@@ -185,7 +185,7 @@
                     icon: 'manage_search',
                     name: 'JellySub: Library subtitle scan',
                     compactName: '🔄 Subtitle scan',
-                    run: () => this.navigate(`configurationpage?name=jellysubscan&libraryId=${encodeURIComponent(context.libraryId)}`)
+                    run: () => this.navigate(`configurationpage?name=jellysubsearchv3&op=scan&libraryId=${encodeURIComponent(context.libraryId)}`)
                 });
             }
 
