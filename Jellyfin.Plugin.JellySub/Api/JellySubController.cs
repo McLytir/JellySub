@@ -683,28 +683,26 @@ public sealed class JellySubController : ControllerBase
 
     private List<BaseItem> GetMediaItems(BaseItem rootItem)
     {
-        var query = new InternalItemsQuery
-        {
-            IncludeItemTypes = new[] { BaseItemKind.Movie, BaseItemKind.Episode, BaseItemKind.Video },
-            IsVirtualItem    = false,
-            Recursive        = true,
-            AncestorIds      = new[] { rootItem.Id },
-        };
+        var items = new List<BaseItem>();
 
-        var items = _libraryManager
-            .GetItemList(query)
-            .Where(i => !string.IsNullOrEmpty(i.Path))
-            .ToList();
+        if (rootItem is Folder folder)
+        {
+            items.AddRange(folder.GetRecursiveChildren()
+                .Where(i => i is Video or Episode)
+                .Where(i => !string.IsNullOrEmpty(i.Path)));
+        }
 
         if (!string.IsNullOrEmpty(rootItem.Path) &&
             rootItem is not Folder &&
-            items.All(i => i.Id != rootItem.Id))
+            rootItem is Video)
         {
             items.Add(rootItem);
         }
 
         return items
-            .OrderBy(i => i is Episode ep ? 0 : 1)
+            .GroupBy(i => i.Id)
+            .Select(g => g.First())
+            .OrderBy(i => i is Episode ? 0 : 1)
             .ThenBy(i => i is Episode ep ? ep.ParentIndexNumber ?? 0 : 0)
             .ThenBy(i => i is Episode ep ? ep.IndexNumber ?? 0 : 0)
             .ThenBy(i => i.Path)

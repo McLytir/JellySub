@@ -5,6 +5,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.29] – 2026-04-03
+
+### Fixed
+- Restored batch analysis and library scan on Jellyfin 10.11.x by removing the plugin's runtime dependency on `ILibraryManager.GetItemList(InternalItemsQuery)`.
+- Jellyfin changed that interface method's return type between 10.10 and 10.11, which caused `MissingMethodException` in live installs even though the plugin still built successfully.
+- Batch and scan item enumeration now use recursive folder traversal instead, which is compatible with the affected Jellyfin versions.
+
 ## [v1.0.28] – 2026-04-03
 
 ### Fixed

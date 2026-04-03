@@ -187,16 +187,14 @@ public sealed class LibraryScanTask : IScheduledTask
             return;
         }
 
-        // Gather all movies + episodes
-        var items = _libraryManager.GetItemList(new InternalItemsQuery
-        {
-            IncludeItemTypes = new[] { BaseItemKind.Movie, BaseItemKind.Episode },
-            IsVirtualItem    = false,
-            Recursive        = true,
-        });
-
-        var videos = items
+        // Gather all movies + episodes without depending on ILibraryManager.GetItemList,
+        // whose return type changed between Jellyfin 10.10 and 10.11.
+        var videos = _libraryManager.RootFolder
+            .GetRecursiveChildren()
+            .Where(i => i is Episode or Video)
             .Where(i => !string.IsNullOrEmpty(i.Path) && File.Exists(i.Path))
+            .GroupBy(i => i.Id)
+            .Select(g => g.First())
             .ToList();
 
         _logger.LogInformation("Library scan: {Count} video(s) found", videos.Count);
