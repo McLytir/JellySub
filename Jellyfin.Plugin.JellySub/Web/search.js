@@ -145,7 +145,7 @@ function selectOperation(view, operation, updateUrl = true) {
 function buildUnifiedUrl(operation, view) {
     const params = new URLSearchParams();
     params.set('page', 'configurationpage');
-    params.set('name', 'jellysubsearchv3');
+    params.set('name', 'jellysubsearchv4');
     params.set('op', operation);
 
     if (operation === 'single') {

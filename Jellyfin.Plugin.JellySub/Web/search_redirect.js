@@ -1,14 +1,21 @@
-/* JellySub – legacy batch route shim */
+/* JellySub – legacy search route shim */
 
 export default function (_view, params) {
     const routeParams = resolveParams(params);
-    const target = new URLSearchParams({ name: 'jellysubsearchv4', op: 'batch' });
+    const target = new URLSearchParams();
+    target.set('name', 'jellysubsearchv4');
 
-    if (routeParams.itemId) {
-        target.set('itemId', routeParams.itemId);
+    for (const [key, value] of Object.entries(routeParams)) {
+        if (key === 'name') {
+            continue;
+        }
+        if (value !== undefined && value !== null && value !== '') {
+            target.set(key, value);
+        }
     }
-    if (routeParams.batchMode) {
-        target.set('batchMode', routeParams.batchMode);
+
+    if (!target.has('op')) {
+        target.set('op', 'single');
     }
 
     navigateTo(`configurationpage?${target.toString()}`);

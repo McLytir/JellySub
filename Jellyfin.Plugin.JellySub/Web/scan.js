@@ -2,7 +2,7 @@
 
 export default function (_view, params) {
     const routeParams = resolveParams(params);
-    const target = new URLSearchParams({ name: 'jellysubsearchv3', op: 'scan' });
+    const target = new URLSearchParams({ name: 'jellysubsearchv4', op: 'scan' });
 
     if (routeParams.libraryId) {
         target.set('libraryId', routeParams.libraryId);

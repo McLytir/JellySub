@@ -5,6 +5,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.28] – 2026-04-03
+
+### Fixed
+- Moved JellySub Operations onto a fresh `jellysubsearchv4` page/controller route so Jellyfin/browser cache cannot keep serving the stale operations page bundle.
+- Added a legacy `jellysubsearchv3` redirect shim so older context-menu/web-client launchers are forwarded into the fresh route instead of opening the stale page.
+- Updated all current plugin-page and web-client navigation to target the new route directly.
+
 ## [v1.0.27] – 2026-04-03
 
 ### Changed
