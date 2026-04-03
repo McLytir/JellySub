@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/assets/logo.png",
     "versions": [
       {
+        "version": "1.0.30.0",
+        "changelog": "\n### Added\n- Added configurable subtitle font family and font size settings in JellySub.\n- Added optional ASS subtitle output mode so newly downloaded subtitles can be saved with the configured styling.\n\n### Changed\n- JellySub now saves either `.srt` or `.ass` depending on the configured subtitle output format.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/McLytir/JellySub/releases/download/v1.0.30/jellysub_1.0.30.0.zip",
+        "checksum": "718cc55b3cf96c30eb0d9077fcdc6d0e",
+        "timestamp": "2026-04-03T10:49:22Z"
+      },
+      {
         "version": "1.0.29.0",
         "changelog": "\n### Fixed\n- Restored batch analysis and library scan on Jellyfin 10.11.x by removing the plugin's runtime dependency on `ILibraryManager.GetItemList(InternalItemsQuery)`.\n- Jellyfin changed that interface method's return type between 10.10 and 10.11, which caused `MissingMethodException` in live installs even though the plugin still built successfully.\n- Batch and scan item enumeration now use recursive folder traversal instead, which is compatible with the affected Jellyfin versions.",
         "targetAbi": "10.10.0.0",
