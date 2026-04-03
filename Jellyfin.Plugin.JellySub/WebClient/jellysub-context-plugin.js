@@ -27,10 +27,12 @@
             this.lastContext = null;
             this.sheetObserver = null;
             this.headerTimer = null;
+            this.liveSubtitleSettings = this.loadLiveSubtitleSettings();
 
             this.onClickCapture = this.onClickCapture.bind(this);
             this.observeSheets = this.observeSheets.bind(this);
             this.injectHeaderActions = this.injectHeaderActions.bind(this);
+            this.injectPlaybackControls = this.injectPlaybackControls.bind(this);
 
             this.init();
         }
@@ -47,9 +49,15 @@
                 }, { once: true });
             }
 
-            this.headerTimer = window.setInterval(this.injectHeaderActions, 1200);
+            this.injectSubtitleStyleSheet();
+            this.applyLiveSubtitleSettings();
+            this.headerTimer = window.setInterval(() => {
+                this.injectHeaderActions();
+                this.injectPlaybackControls();
+            }, 1200);
             this.observeSheets();
             this.injectHeaderActions();
+            this.injectPlaybackControls();
         }
 
         onClickCapture(event) {
@@ -147,6 +155,129 @@
             if (!root.parentElement) {
                 mount.prepend(root);
             }
+        }
+
+        injectPlaybackControls() {
+            const hasVideo = !!document.querySelector('video');
+            const existing = document.getElementById('jellysub-live-subtitle-controls');
+            if (!hasVideo) {
+                if (existing) {
+                    existing.remove();
+                }
+                return;
+            }
+
+            const root = existing || document.createElement('div');
+            root.id = 'jellysub-live-subtitle-controls';
+            root.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:99999;background:rgba(20,20,20,.88);color:#fff;padding:12px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.35);width:min(280px,calc(100vw - 32px));font-size:12px';
+            root.innerHTML = `
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+                    <strong>JellySub live subtitles</strong>
+                    <button type="button" data-jellysub-live-toggle style="background:none;border:none;color:#fff;cursor:pointer;font-size:18px;line-height:1">–</button>
+                </div>
+                <div data-jellysub-live-body>
+                    <label style="display:block;margin-bottom:8px">
+                        <span style="display:block;color:#bbb;margin-bottom:4px">Font family</span>
+                        <input type="text" data-jellysub-live-font value="${escapeHtml(this.liveSubtitleSettings.fontFamily)}" style="width:100%;padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff" />
+                    </label>
+                    <label style="display:block;margin-bottom:8px">
+                        <span data-jellysub-live-size-label style="display:block;color:#bbb;margin-bottom:4px">Subtitle size (${this.liveSubtitleSettings.scalePercent}%)</span>
+                        <input type="range" min="60" max="220" step="5" data-jellysub-live-size value="${this.liveSubtitleSettings.scalePercent}" style="width:100%" />
+                    </label>
+                    <div style="display:flex;gap:8px;justify-content:flex-end">
+                        <button type="button" data-jellysub-live-reset class="raised button-alt" style="padding:6px 10px;border-radius:999px;cursor:pointer">Reset</button>
+                    </div>
+                </div>`;
+
+            const fontInput = root.querySelector('[data-jellysub-live-font]');
+            const sizeInput = root.querySelector('[data-jellysub-live-size]');
+            const sizeLabel = root.querySelector('[data-jellysub-live-size-label]');
+            const body = root.querySelector('[data-jellysub-live-body]');
+            const toggle = root.querySelector('[data-jellysub-live-toggle]');
+            toggle.addEventListener('click', () => {
+                const collapsed = body.style.display === 'none';
+                body.style.display = collapsed ? 'block' : 'none';
+                toggle.textContent = collapsed ? '–' : '+';
+            });
+            root.querySelector('[data-jellysub-live-reset]').addEventListener('click', () => {
+                this.liveSubtitleSettings = { fontFamily: 'Arial', scalePercent: 100 };
+                fontInput.value = this.liveSubtitleSettings.fontFamily;
+                sizeInput.value = String(this.liveSubtitleSettings.scalePercent);
+                sizeLabel.textContent = `Subtitle size (${this.liveSubtitleSettings.scalePercent}%)`;
+                this.applyLiveSubtitleSettings();
+                this.saveLiveSubtitleSettings();
+            });
+            fontInput.addEventListener('input', () => {
+                this.liveSubtitleSettings.fontFamily = fontInput.value.trim() || 'Arial';
+                this.applyLiveSubtitleSettings();
+                this.saveLiveSubtitleSettings();
+            });
+            sizeInput.addEventListener('input', () => {
+                this.liveSubtitleSettings.scalePercent = parseInt(sizeInput.value, 10) || 100;
+                sizeLabel.textContent = `Subtitle size (${this.liveSubtitleSettings.scalePercent}%)`;
+                this.applyLiveSubtitleSettings();
+                this.saveLiveSubtitleSettings();
+            });
+
+            if (!root.parentElement) {
+                document.body.appendChild(root);
+            }
+        }
+
+        injectSubtitleStyleSheet() {
+            if (document.getElementById('jellysub-live-subtitle-style')) {
+                return;
+            }
+
+            const style = document.createElement('style');
+            style.id = 'jellysub-live-subtitle-style';
+            style.textContent = `
+                :root {
+                    --jellysub-live-font-family: Arial;
+                    --jellysub-live-font-size: 100%;
+                }
+                video::cue {
+                    font-family: var(--jellysub-live-font-family) !important;
+                    font-size: var(--jellysub-live-font-size) !important;
+                }
+                .subtitleText,
+                .videoSubtitles,
+                .playerSubtitleText,
+                .vjs-text-track-display div,
+                .libassjs-canvas-parent {
+                    font-family: var(--jellysub-live-font-family) !important;
+                    font-size: var(--jellysub-live-font-size) !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        loadLiveSubtitleSettings() {
+            try {
+                const raw = window.localStorage.getItem('jellysub-live-subtitle-settings');
+                if (!raw) {
+                    return { fontFamily: 'Arial', scalePercent: 100 };
+                }
+                const parsed = JSON.parse(raw);
+                return {
+                    fontFamily: String(parsed.fontFamily || 'Arial'),
+                    scalePercent: Math.max(60, Math.min(220, parseInt(parsed.scalePercent, 10) || 100)),
+                };
+            } catch (_) {
+                return { fontFamily: 'Arial', scalePercent: 100 };
+            }
+        }
+
+        saveLiveSubtitleSettings() {
+            try {
+                window.localStorage.setItem('jellysub-live-subtitle-settings', JSON.stringify(this.liveSubtitleSettings));
+            } catch (_) {}
+        }
+
+        applyLiveSubtitleSettings() {
+            const root = document.documentElement;
+            root.style.setProperty('--jellysub-live-font-family', this.liveSubtitleSettings.fontFamily || 'Arial');
+            root.style.setProperty('--jellysub-live-font-size', `${this.liveSubtitleSettings.scalePercent || 100}%`);
         }
 
         getAvailableActions(context, headerMode) {

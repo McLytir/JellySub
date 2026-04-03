@@ -106,6 +106,15 @@
           <button is="emby-button" type="button" class="raised" id="btnBatchAnalyze">Analyse</button>
         </div>
 
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:-8px 0 14px">
+          <label style="display:flex;align-items:center;gap:8px">
+            <input is="emby-checkbox" type="checkbox" id="batchReplaceOriginalSrt" />
+            <span>Delete original .srt after creating styled .ass</span>
+          </label>
+          <button is="emby-button" type="button" class="raised button-alt" id="btnBatchRestyle">Restyle existing subtitles</button>
+        </div>
+        <p id="batchRestyleStatus" style="display:none;color:#aaa;font-size:12px;margin:0 0 12px"></p>
+
         <div id="batchModeHint" style="font-size:12px;color:#aaa;margin-bottom:12px;display:none"></div>
 
         <div id="episodeSection" style="display:none">
@@ -174,7 +183,7 @@
           and auto-downloads the best available match from all enabled sources.
         </p>
 
-        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
           <button is="emby-button" type="button" class="raised" id="btnStartScan">
             ▶ Start Scan
           </button>
@@ -185,6 +194,15 @@
             Refresh status
           </button>
         </div>
+
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:20px">
+          <label style="display:flex;align-items:center;gap:8px">
+            <input is="emby-checkbox" type="checkbox" id="scanReplaceOriginalSrt" />
+            <span>Delete original .srt after creating styled .ass</span>
+          </label>
+          <button is="emby-button" type="button" class="raised button-alt" id="btnRestyleLibrary">Restyle existing library subtitles</button>
+        </div>
+        <p id="scanRestyleStatus" style="display:none;color:#aaa;font-size:12px;margin:-8px 0 16px"></p>
 
         <div id="statsBar" style="display:none;gap:24px;flex-wrap:wrap;margin-bottom:16px">
           <div>

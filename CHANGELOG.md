@@ -5,6 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.31] – 2026-04-03
+
+### Added
+- Added restyle actions for existing subtitles in JellySub Operations, including series/season scope and whole-library scope.
+- Added best-effort live subtitle font/size controls to the JellySub web-client patch for Jellyfin Web/Desktop playback pages.
+
+### Changed
+- Existing subtitle restyling now converts SRT sidecars to styled ASS output using the configured JellySub font settings, and can optionally delete the original SRT files afterward.
+
 ## [v1.0.30] – 2026-04-03
 
 ### Added

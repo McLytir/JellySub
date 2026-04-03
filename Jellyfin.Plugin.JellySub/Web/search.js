@@ -42,6 +42,7 @@ export default function (view, params) {
     view.querySelector('#btnBatchModeAuto').addEventListener('click',   () => setBatchMode(view, 'auto'));
     view.querySelector('#btnBatchModeGuided').addEventListener('click', () => setBatchMode(view, 'guided'));
     view.querySelector('#btnBatchAnalyze').addEventListener('click', () => analyzeBatch(view));
+    view.querySelector('#btnBatchRestyle').addEventListener('click', () => restyleBatchSubtitles(view));
     view.querySelector('#btnConfirmDownload').addEventListener('click', () => confirmBatchDownload(view));
     view.querySelector('#btnCopyCmd').addEventListener('click', () => {
         navigator.clipboard.writeText(view.querySelector('#vlcCmd').textContent)
@@ -64,6 +65,7 @@ export default function (view, params) {
             Dashboard.processErrorResponse({ statusText: 'Failed to start scan: ' + e });
         }
     });
+    view.querySelector('#btnRestyleLibrary').addEventListener('click', () => restyleLibrarySubtitles(view));
     view.querySelector('#btnRefreshStatus').addEventListener('click', () => refreshScanStatus(view));
     view.querySelector('#logFilter').addEventListener('change', () => renderScanLog(view));
 
@@ -392,6 +394,36 @@ async function analyzeBatch(view) {
     }
 }
 
+async function restyleBatchSubtitles(view) {
+    const itemId = view.querySelector('#batchItemId').value.trim();
+    if (!itemId) {
+        Dashboard.toast('Enter a series or season item ID');
+        return;
+    }
+
+    const replaceOriginalSrt = !!view.querySelector('#batchReplaceOriginalSrt').checked;
+    const statusEl = view.querySelector('#batchRestyleStatus');
+    statusEl.style.display = 'block';
+    statusEl.textContent = 'Restyling existing subtitles…';
+
+    Dashboard.showLoadingMsg();
+    try {
+        const res = await ApiClient.ajax({
+            type: 'POST',
+            url: ApiClient.getUrl(`${API}/style/restyle/item`),
+            data: JSON.stringify({ itemId, replaceOriginalSrt }),
+            contentType: 'application/json',
+        });
+        statusEl.textContent = `Restyled ${res.restyledCount ?? 0} subtitle file(s), skipped ${res.skippedCount ?? 0} media item(s), failed ${res.failedCount ?? 0}.`;
+        Dashboard.toast('Batch subtitle restyle complete');
+    } catch (e) {
+        statusEl.textContent = 'Restyle failed: ' + e;
+        Dashboard.processErrorResponse({ statusText: 'Restyle failed: ' + e });
+    } finally {
+        Dashboard.hideLoadingMsg();
+    }
+}
+
 function resetBatchProgress(view) {
     view.querySelector('#ep1Pane').style.display = 'none';
     view.querySelector('#testSection').style.display = 'none';
@@ -701,6 +733,30 @@ async function refreshScanStatus(view) {
         renderScanLog(view);
     } catch {
         /* ignore transient errors */
+    }
+}
+
+async function restyleLibrarySubtitles(view) {
+    const replaceOriginalSrt = !!view.querySelector('#scanReplaceOriginalSrt').checked;
+    const statusEl = view.querySelector('#scanRestyleStatus');
+    statusEl.style.display = 'block';
+    statusEl.textContent = 'Restyling existing library subtitles…';
+
+    Dashboard.showLoadingMsg();
+    try {
+        const res = await ApiClient.ajax({
+            type: 'POST',
+            url: ApiClient.getUrl(`${API}/style/restyle/library`),
+            data: JSON.stringify({ replaceOriginalSrt }),
+            contentType: 'application/json',
+        });
+        statusEl.textContent = `Restyled ${res.restyledCount ?? 0} subtitle file(s), skipped ${res.skippedCount ?? 0} media item(s), failed ${res.failedCount ?? 0}.`;
+        Dashboard.toast('Library subtitle restyle complete');
+    } catch (e) {
+        statusEl.textContent = 'Library restyle failed: ' + e;
+        Dashboard.processErrorResponse({ statusText: 'Library restyle failed: ' + e });
+    } finally {
+        Dashboard.hideLoadingMsg();
     }
 }
 

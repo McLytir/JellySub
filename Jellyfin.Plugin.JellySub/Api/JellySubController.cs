@@ -537,6 +537,48 @@ public sealed class JellySubController : ControllerBase
         });
     }
 
+    /// <summary>Restyle existing subtitle files under a selected item tree using current JellySub style settings.</summary>
+    [HttpPost("style/restyle/item")]
+    [Authorize(Policy = "RequiresElevation")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<RestyleSubtitlesResponseDto>> RestyleItemSubtitles(
+        [FromBody] RestyleItemSubtitlesRequestDto dto,
+        CancellationToken cancellationToken)
+    {
+        var item = _libraryManager.GetItemById(Guid.Parse(dto.ItemId));
+        if (item is null)
+        {
+            return NotFound();
+        }
+
+        var mediaItems = GetMediaItems(item);
+        var response = await RestyleMediaItemsAsync(
+            mediaItems,
+            item.Name,
+            dto.ReplaceOriginalSrt,
+            cancellationToken).ConfigureAwait(false);
+
+        return Ok(response);
+    }
+
+    /// <summary>Restyle existing subtitle files across the full Jellyfin library using current JellySub style settings.</summary>
+    [HttpPost("style/restyle/library")]
+    [Authorize(Policy = "RequiresElevation")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<RestyleSubtitlesResponseDto>> RestyleLibrarySubtitles(
+        [FromBody] RestyleLibrarySubtitlesRequestDto dto,
+        CancellationToken cancellationToken)
+    {
+        var mediaItems = GetAllLibraryMediaItems();
+        var response = await RestyleMediaItemsAsync(
+            mediaItems,
+            "Entire library",
+            dto.ReplaceOriginalSrt,
+            cancellationToken).ConfigureAwait(false);
+
+        return Ok(response);
+    }
+
     // ═════════════════════════════════════════════════════════════════════════
     // CONFIGURATION
     // ═════════════════════════════════════════════════════════════════════════
@@ -708,6 +750,70 @@ public sealed class JellySubController : ControllerBase
             .ThenBy(i => i.Path)
             .ThenBy(i => i.Name)
             .ToList();
+    }
+
+    private List<BaseItem> GetAllLibraryMediaItems()
+        => _libraryManager.RootFolder
+            .GetRecursiveChildren()
+            .Where(i => i is Video or Episode)
+            .Where(i => !string.IsNullOrEmpty(i.Path))
+            .GroupBy(i => i.Id)
+            .Select(g => g.First())
+            .OrderBy(i => i is Episode ? 0 : 1)
+            .ThenBy(i => i is Episode ep ? ep.ParentIndexNumber ?? 0 : 0)
+            .ThenBy(i => i is Episode ep ? ep.IndexNumber ?? 0 : 0)
+            .ThenBy(i => i.Path)
+            .ThenBy(i => i.Name)
+            .ToList();
+
+    private async Task<RestyleSubtitlesResponseDto> RestyleMediaItemsAsync(
+        IReadOnlyList<BaseItem> mediaItems,
+        string scope,
+        bool replaceOriginalSrt,
+        CancellationToken cancellationToken)
+    {
+        var details = new List<RestyleSubtitleResultDto>();
+        var restyled = 0;
+        var skipped = 0;
+        var failed = 0;
+
+        foreach (var item in mediaItems)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var results = await _fileService
+                .RestyleExistingSubtitlesAsync(item.Path!, replaceOriginalSrt, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (results.Count == 0)
+            {
+                skipped++;
+                continue;
+            }
+
+            foreach (var result in results)
+            {
+                if (result.Success)
+                {
+                    restyled++;
+                }
+                else
+                {
+                    failed++;
+                }
+
+                details.Add(RestyleSubtitleResultDto.From(BuildMediaLabel(item), result));
+            }
+        }
+
+        return new RestyleSubtitlesResponseDto
+        {
+            Scope = scope,
+            MediaItemsScanned = mediaItems.Count,
+            RestyledCount = restyled,
+            SkippedCount = skipped,
+            FailedCount = failed,
+            Results = details,
+        };
     }
 
     private static string BuildMediaLabel(BaseItem item)

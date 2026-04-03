@@ -21,6 +21,7 @@ public sealed class SubtitleFileService
 {
     private static readonly Regex CueSeparatorRegex = new("\r?\n\r?\n+", RegexOptions.Compiled);
     private static readonly Regex BasicTagRegex = new("<(\\/?)(i|b|u)>", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex AssDefaultStyleRegex = new(@"^Style:\s*Default,[^\r\n]*$", RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private readonly IEnumerable<ISubtitleSource> _sources;
     private readonly ILogger<SubtitleFileService> _logger;
@@ -126,10 +127,54 @@ public sealed class SubtitleFileService
         return Path.Combine(dir, $"{stem}.{language}.{ext}");
     }
 
+    /// <summary>
+    /// Restyle existing subtitle sidecar files for a media item using the configured
+    /// font family and font size. SRT files are converted to ASS; existing ASS files
+    /// have their default style updated in place.
+    /// </summary>
+    public async Task<IReadOnlyList<RestyledSubtitleFile>> RestyleExistingSubtitlesAsync(
+        string mediaFilePath,
+        bool replaceOriginalSrt,
+        CancellationToken cancellationToken)
+    {
+        var dir = Path.GetDirectoryName(mediaFilePath);
+        var stem = Path.GetFileNameWithoutExtension(mediaFilePath);
+        if (string.IsNullOrWhiteSpace(dir) || string.IsNullOrWhiteSpace(stem) || !Directory.Exists(dir))
+        {
+            return Array.Empty<RestyledSubtitleFile>();
+        }
+
+        var config = Plugin.Instance!.Configuration;
+        var candidates = Directory.EnumerateFiles(dir, $"{stem}.*")
+            .Where(path => path.StartsWith(Path.Combine(dir, stem + "."), StringComparison.OrdinalIgnoreCase))
+            .Where(path =>
+            {
+                var ext = Path.GetExtension(path);
+                return ext.Equals(".srt", StringComparison.OrdinalIgnoreCase)
+                    || ext.Equals(".ass", StringComparison.OrdinalIgnoreCase);
+            })
+            .OrderBy(path => path)
+            .ToList();
+
+        var results = new List<RestyledSubtitleFile>();
+        foreach (var sourcePath in candidates)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            results.Add(await RestyleSubtitleFileAsync(
+                sourcePath,
+                config.StyledSubtitleFontFamily,
+                config.StyledSubtitleFontSize,
+                replaceOriginalSrt,
+                cancellationToken).ConfigureAwait(false));
+        }
+
+        return results;
+    }
+
     private static string NormalizeOutputFormat(string? outputFormat)
         => string.Equals(outputFormat, "Ass", StringComparison.OrdinalIgnoreCase) ? "Ass" : "Srt";
 
-    private static string ConvertSrtToAss(string srtContent, string? fontFamily, int fontSize)
+    public static string ConvertSrtToAss(string srtContent, string? fontFamily, int fontSize)
     {
         var safeFont = string.IsNullOrWhiteSpace(fontFamily) ? "Arial" : fontFamily.Trim();
         var safeSize = Math.Clamp(fontSize, 8, 120);
@@ -143,7 +188,7 @@ public sealed class SubtitleFileService
         builder.AppendLine();
         builder.AppendLine("[V4+ Styles]");
         builder.AppendLine("Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding");
-        builder.AppendLine($"Style: Default,{EscapeAssStyleValue(safeFont)},{safeSize},&H00FFFFFF,&H000000FF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,2,1,2,20,20,24,1");
+        builder.AppendLine(BuildAssDefaultStyleLine(safeFont, safeSize));
         builder.AppendLine();
         builder.AppendLine("[Events]");
         builder.AppendLine("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text");
@@ -223,6 +268,102 @@ public sealed class SubtitleFileService
         });
 
         return escaped;
+    }
+
+    private static async Task<RestyledSubtitleFile> RestyleSubtitleFileAsync(
+        string sourcePath,
+        string? fontFamily,
+        int fontSize,
+        bool replaceOriginalSrt,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var ext = Path.GetExtension(sourcePath);
+            var content = await File.ReadAllTextAsync(sourcePath, cancellationToken).ConfigureAwait(false);
+            string outputPath;
+            string outputContent;
+
+            if (ext.Equals(".srt", StringComparison.OrdinalIgnoreCase))
+            {
+                outputPath = Path.ChangeExtension(sourcePath, ".ass");
+                outputContent = ConvertSrtToAss(content, fontFamily, fontSize);
+            }
+            else if (ext.Equals(".ass", StringComparison.OrdinalIgnoreCase))
+            {
+                outputPath = sourcePath;
+                outputContent = RestyleAssContent(content, fontFamily, fontSize);
+            }
+            else
+            {
+                return new RestyledSubtitleFile
+                {
+                    SourcePath = sourcePath,
+                    SavedPath = sourcePath,
+                    Success = false,
+                    Status = "Failed",
+                    Error = "Unsupported subtitle format",
+                };
+            }
+
+            await File.WriteAllTextAsync(outputPath, outputContent, cancellationToken).ConfigureAwait(false);
+
+            if (replaceOriginalSrt && ext.Equals(".srt", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(sourcePath, outputPath, StringComparison.OrdinalIgnoreCase))
+            {
+                File.Delete(sourcePath);
+            }
+
+            return new RestyledSubtitleFile
+            {
+                SourcePath = sourcePath,
+                SavedPath = outputPath,
+                Success = true,
+                Status = "Restyled",
+            };
+        }
+        catch (Exception ex)
+        {
+            return new RestyledSubtitleFile
+            {
+                SourcePath = sourcePath,
+                SavedPath = string.Empty,
+                Success = false,
+                Status = "Failed",
+                Error = ex.Message,
+            };
+        }
+    }
+
+    private static string RestyleAssContent(string assContent, string? fontFamily, int fontSize)
+    {
+        var styleLine = BuildAssDefaultStyleLine(fontFamily, fontSize);
+        if (AssDefaultStyleRegex.IsMatch(assContent))
+        {
+            return AssDefaultStyleRegex.Replace(assContent, styleLine, 1);
+        }
+
+        const string marker = "[V4+ Styles]";
+        var formatIndex = assContent.IndexOf("Format:", StringComparison.OrdinalIgnoreCase);
+        if (assContent.Contains(marker, StringComparison.OrdinalIgnoreCase) && formatIndex >= 0)
+        {
+            var lineEnd = assContent.IndexOf('\n', formatIndex);
+            if (lineEnd >= 0)
+            {
+                return assContent.Insert(lineEnd + 1, styleLine + Environment.NewLine);
+            }
+        }
+
+        return assContent + Environment.NewLine + marker + Environment.NewLine
+            + "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding" + Environment.NewLine
+            + styleLine + Environment.NewLine;
+    }
+
+    private static string BuildAssDefaultStyleLine(string? fontFamily, int fontSize)
+    {
+        var safeFont = string.IsNullOrWhiteSpace(fontFamily) ? "Arial" : fontFamily.Trim();
+        var safeSize = Math.Clamp(fontSize, 8, 120);
+        return $"Style: Default,{EscapeAssStyleValue(safeFont)},{safeSize},&H00FFFFFF,&H000000FF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,2,1,2,20,20,24,1";
     }
 
     private static string EscapeAssStyleValue(string value)
