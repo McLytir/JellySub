@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/assets/logo.png",
     "versions": [
       {
+        "version": "1.0.27.0",
+        "changelog": "\n### Changed\n- Unified single-item search, series/folder batch download, and library scan under one JellySub Operations page with in-page section switching.\n- Kept the old batch/scan routes as compatibility shims so stale links still land on the new unified page.\n\n### Fixed\n- Context-menu and settings-page navigation now open the correct unified JellySub flow (`single`, `batch`, or `scan`) instead of scattering across separate pages.\n- Assisted search once again preserves and visibly fills the Jellyfin item ID when launched from the web-client action, so the page opens with the proper context and auto-search can run.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/McLytir/JellySub/releases/download/v1.0.27/jellysub_1.0.27.0.zip",
+        "checksum": "a5308ddcd8d2dbb0dd8d7a8e02211d76",
+        "timestamp": "2026-04-03T04:08:41Z"
+      },
+      {
         "version": "1.0.26.0",
         "changelog": "\n### Fixed\n- The ellipsis/context-menu \"Search subtitles\" action is now shown only for playable media items (Movie/Episode/Video), not folder-like items such as Series or Season. This prevents assisted search from auto-launching against folder metadata like \"Season 1 2023\".\n- The context-menu search route now explicitly opens in assisted mode.",
         "targetAbi": "10.10.0.0",
