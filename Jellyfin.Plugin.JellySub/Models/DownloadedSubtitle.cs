@@ -8,7 +8,7 @@ public sealed class DownloadedSubtitle
     /// <summary>Whether the download and file-write succeeded.</summary>
     public bool Success { get; set; }
 
-    /// <summary>Absolute path of the saved .srt file on the server.</summary>
+    /// <summary>Absolute path of the saved subtitle file on the server.</summary>
     public string SavedPath { get; set; } = string.Empty;
 
     /// <summary>Human-readable error message when <see cref="Success"/> is false.</summary>

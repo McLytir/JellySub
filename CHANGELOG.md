@@ -5,6 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.30] – 2026-04-03
+
+### Added
+- Added configurable subtitle font family and font size settings in JellySub.
+- Added optional ASS subtitle output mode so newly downloaded subtitles can be saved with the configured styling.
+
+### Changed
+- JellySub now saves either `.srt` or `.ass` depending on the configured subtitle output format.
+
 ## [v1.0.29] – 2026-04-03
 
 ### Fixed

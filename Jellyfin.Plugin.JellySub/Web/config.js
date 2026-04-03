@@ -17,6 +17,7 @@ export default function (view) {
     view.querySelector('#btnWebClientInstall').addEventListener('click', () => installWebClient(view));
     view.querySelector('#btnWebClientUninstall').addEventListener('click', () => uninstallWebClient(view));
     view.querySelector('#btnDownloadLinux').addEventListener('click', () => downloadScript('linux', 'install'));
+    view.querySelector('#subtitleOutputFormat').addEventListener('change', () => toggleSubtitleStyleFields(view));
     view.querySelector('#btnDownloadMac').addEventListener('click', () => downloadScript('macos', 'install'));
     view.querySelector('#btnDownloadWindows').addEventListener('click', () => downloadScript('windows', 'install'));
     view.querySelector('#btnDownloadLinuxUninstall').addEventListener('click', () => downloadScript('linux', 'uninstall'));
@@ -132,6 +133,10 @@ function populateForm(view, cfg) {
     view.querySelector('#syncKeepOriginal').checked  = get('syncKeepOriginal', 'SyncKeepOriginal') !== false;
     view.querySelector('#ffsubsyncPath').value       = get('ffsubsyncPath', 'FfsubsyncPath')                 || '';
     view.querySelector('#alassPath').value           = get('alassPath', 'AlassPath')                         || '';
+    view.querySelector('#subtitleOutputFormat').value = get('subtitleOutputFormat', 'SubtitleOutputFormat') || 'Srt';
+    view.querySelector('#styledSubtitleFontFamily').value = get('styledSubtitleFontFamily', 'StyledSubtitleFontFamily') || 'Arial';
+    view.querySelector('#styledSubtitleFontSize').value = get('styledSubtitleFontSize', 'StyledSubtitleFontSize') ?? 42;
+    toggleSubtitleStyleFields(view);
 }
 
 function readForm(view, existing) {
@@ -155,7 +160,15 @@ function readForm(view, existing) {
         syncKeepOriginal:      view.querySelector('#syncKeepOriginal').checked,
         ffsubsyncPath:         view.querySelector('#ffsubsyncPath').value.trim(),
         alassPath:             view.querySelector('#alassPath').value.trim(),
+        subtitleOutputFormat:  view.querySelector('#subtitleOutputFormat').value,
+        styledSubtitleFontFamily: view.querySelector('#styledSubtitleFontFamily').value.trim() || 'Arial',
+        styledSubtitleFontSize: Math.max(8, parseInt(view.querySelector('#styledSubtitleFontSize').value, 10) || 42),
     };
+}
+
+function toggleSubtitleStyleFields(view) {
+    const format = view.querySelector('#subtitleOutputFormat').value;
+    view.querySelector('#subtitleStyleFields').style.display = format === 'Ass' ? 'block' : 'none';
 }
 
 function makeSourceRow(src, enabled) {

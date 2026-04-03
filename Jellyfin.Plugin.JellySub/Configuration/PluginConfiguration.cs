@@ -49,6 +49,23 @@ public sealed class PluginConfiguration : BasePluginConfiguration
     /// </summary>
     public int MinimumDownloadCount { get; set; } = 0;
 
+    /// <summary>
+    /// Subtitle output format.
+    /// "Srt" keeps plain SubRip output.
+    /// "Ass" saves Advanced SubStation Alpha output so font styling can be applied.
+    /// </summary>
+    public string SubtitleOutputFormat { get; set; } = "Srt";
+
+    /// <summary>
+    /// Preferred font family for styled ASS subtitle output.
+    /// </summary>
+    public string StyledSubtitleFontFamily { get; set; } = "Arial";
+
+    /// <summary>
+    /// Preferred font size for styled ASS subtitle output.
+    /// </summary>
+    public int StyledSubtitleFontSize { get; set; } = 42;
+
     // ── Library scan ──────────────────────────────────────────────────────────
 
     /// <summary>

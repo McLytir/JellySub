@@ -99,6 +99,31 @@
             <label class="inputLabel" for="minDownloads">Minimum download count (0 = accept all)</label>
             <input is="emby-input" type="number" id="minDownloads" min="0" value="0" />
           </div>
+
+          <div class="selectContainer" style="margin-top:16px; max-width:320px">
+            <label class="selectLabel" for="subtitleOutputFormat">Subtitle save format</label>
+            <select is="emby-select" id="subtitleOutputFormat" class="emby-select-withcolor">
+              <option value="Srt">SRT — plain text subtitles</option>
+              <option value="Ass">ASS — styled subtitles with custom font/size</option>
+            </select>
+          </div>
+
+          <div id="subtitleStyleFields" style="margin-top:12px;display:none">
+            <p class="fieldDescription" style="max-width:640px">
+              Custom font family and size are applied when JellySub saves subtitles as ASS.
+              This affects newly downloaded subtitles, not existing subtitle files already on disk.
+            </p>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+              <div class="inputContainer" style="flex:1;min-width:220px;max-width:320px;margin:0">
+                <label class="inputLabel" for="styledSubtitleFontFamily">Font family</label>
+                <input is="emby-input" type="text" id="styledSubtitleFontFamily" placeholder="Arial" />
+              </div>
+              <div class="inputContainer" style="width:160px;margin:0">
+                <label class="inputLabel" for="styledSubtitleFontSize">Font size</label>
+                <input is="emby-input" type="number" id="styledSubtitleFontSize" min="8" max="120" value="42" />
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- ── Library scan schedule ────────────────────────────────────── -->

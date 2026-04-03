@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.JellySub.Models;
@@ -16,6 +19,9 @@ namespace Jellyfin.Plugin.JellySub.Services;
 /// </summary>
 public sealed class SubtitleFileService
 {
+    private static readonly Regex CueSeparatorRegex = new("\r?\n\r?\n+", RegexOptions.Compiled);
+    private static readonly Regex BasicTagRegex = new("<(\\/?)(i|b|u)>", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     private readonly IEnumerable<ISubtitleSource> _sources;
     private readonly ILogger<SubtitleFileService> _logger;
 
@@ -58,9 +64,11 @@ public sealed class SubtitleFileService
             return Fail("Source returned empty subtitle content");
         }
 
-        var destPath = BuildDestinationPath(mediaFilePath, result.Language);
+        var config = Plugin.Instance!.Configuration;
+        var outputFormat = NormalizeOutputFormat(config.SubtitleOutputFormat);
+        var destPath = BuildDestinationPath(mediaFilePath, result.Language, outputFormat);
 
-        if (!Plugin.Instance!.Configuration.OverwriteExisting && File.Exists(destPath))
+        if (!config.OverwriteExisting && File.Exists(destPath))
         {
             _logger.LogInformation("Skipping {Path} — subtitle already exists", destPath);
             return new DownloadedSubtitle
@@ -71,9 +79,13 @@ public sealed class SubtitleFileService
             };
         }
 
+        var outputContent = outputFormat == "Ass"
+            ? ConvertSrtToAss(srtContent, config.StyledSubtitleFontFamily, config.StyledSubtitleFontSize)
+            : srtContent;
+
         try
         {
-            await File.WriteAllTextAsync(destPath, srtContent, cancellationToken).ConfigureAwait(false);
+            await File.WriteAllTextAsync(destPath, outputContent, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -96,20 +108,125 @@ public sealed class SubtitleFileService
     /// </summary>
     public static bool SubtitleExists(string mediaFilePath, string language)
     {
-        var path = BuildDestinationPath(mediaFilePath, language);
+        var format = NormalizeOutputFormat(Plugin.Instance?.Configuration.SubtitleOutputFormat);
+        var path = BuildDestinationPath(mediaFilePath, language, format);
         return File.Exists(path);
     }
 
     /// <summary>
     /// Build the canonical subtitle path for a media file.
     /// E.g.: /media/The.Matrix.mkv + "en" → /media/The.Matrix.en.srt
+    /// or /media/The.Matrix.en.ass depending on the configured output format.
     /// </summary>
-    public static string BuildDestinationPath(string mediaFilePath, string language)
+    public static string BuildDestinationPath(string mediaFilePath, string language, string? outputFormat = null)
     {
         var dir  = Path.GetDirectoryName(mediaFilePath)!;
         var stem = Path.GetFileNameWithoutExtension(mediaFilePath);
-        return Path.Combine(dir, $"{stem}.{language}.srt");
+        var ext = NormalizeOutputFormat(outputFormat) == "Ass" ? "ass" : "srt";
+        return Path.Combine(dir, $"{stem}.{language}.{ext}");
     }
+
+    private static string NormalizeOutputFormat(string? outputFormat)
+        => string.Equals(outputFormat, "Ass", StringComparison.OrdinalIgnoreCase) ? "Ass" : "Srt";
+
+    private static string ConvertSrtToAss(string srtContent, string? fontFamily, int fontSize)
+    {
+        var safeFont = string.IsNullOrWhiteSpace(fontFamily) ? "Arial" : fontFamily.Trim();
+        var safeSize = Math.Clamp(fontSize, 8, 120);
+        var normalized = srtContent.Replace("\r\n", "\n").Trim();
+        var builder = new StringBuilder();
+
+        builder.AppendLine("[Script Info]");
+        builder.AppendLine("ScriptType: v4.00+");
+        builder.AppendLine("WrapStyle: 0");
+        builder.AppendLine("ScaledBorderAndShadow: yes");
+        builder.AppendLine();
+        builder.AppendLine("[V4+ Styles]");
+        builder.AppendLine("Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding");
+        builder.AppendLine($"Style: Default,{EscapeAssStyleValue(safeFont)},{safeSize},&H00FFFFFF,&H000000FF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,2,1,2,20,20,24,1");
+        builder.AppendLine();
+        builder.AppendLine("[Events]");
+        builder.AppendLine("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text");
+
+        foreach (var block in CueSeparatorRegex.Split(normalized))
+        {
+            var lines = block.Split('\n', StringSplitOptions.None)
+                .Select(l => l.TrimEnd())
+                .Where(l => !string.IsNullOrWhiteSpace(l))
+                .ToList();
+            if (!lines.Any())
+            {
+                continue;
+            }
+
+            var timingIndex = lines.FindIndex(l => l.Contains("-->", StringComparison.Ordinal));
+            if (timingIndex < 0)
+            {
+                continue;
+            }
+
+            var timingParts = lines[timingIndex].Split("-->", StringSplitOptions.TrimEntries);
+            if (timingParts.Length != 2)
+            {
+                continue;
+            }
+
+            var textLines = lines.Skip(timingIndex + 1).ToList();
+            if (!textLines.Any())
+            {
+                textLines.Add(string.Empty);
+            }
+
+            var text = string.Join("\\N", textLines.Select(ConvertInlineMarkupToAss));
+            builder.Append("Dialogue: 0,");
+            builder.Append(ConvertSrtTimeToAss(timingParts[0]));
+            builder.Append(',');
+            builder.Append(ConvertSrtTimeToAss(timingParts[1]));
+            builder.AppendLine($",Default,,0,0,0,,{text}");
+        }
+
+        return builder.ToString();
+    }
+
+    private static string ConvertSrtTimeToAss(string value)
+    {
+        var normalized = value.Trim().Replace(',', '.');
+        if (TimeSpan.TryParseExact(normalized, @"hh\:mm\:ss\.fff", CultureInfo.InvariantCulture, out var ts))
+        {
+            var totalHours = (int)ts.TotalHours;
+            var centiseconds = ts.Milliseconds / 10;
+            return $"{totalHours}:{ts.Minutes:00}:{ts.Seconds:00}.{centiseconds:00}";
+        }
+
+        return normalized;
+    }
+
+    private static string ConvertInlineMarkupToAss(string value)
+    {
+        var escaped = value
+            .Replace("\\", "\\\\")
+            .Replace("{", "\\{")
+            .Replace("}", "\\}");
+
+        escaped = BasicTagRegex.Replace(escaped, match =>
+        {
+            var closing = match.Groups[1].Value == "/";
+            var tag = match.Groups[2].Value.ToLowerInvariant();
+            var state = closing ? "0" : "1";
+            return tag switch
+            {
+                "i" => $"{{\\i{state}}}",
+                "b" => $"{{\\b{state}}}",
+                "u" => $"{{\\u{state}}}",
+                _ => string.Empty,
+            };
+        });
+
+        return escaped;
+    }
+
+    private static string EscapeAssStyleValue(string value)
+        => value.Replace(',', ' ');
 
     private static DownloadedSubtitle Fail(string error) =>
         new() { Success = false, Error = error };
