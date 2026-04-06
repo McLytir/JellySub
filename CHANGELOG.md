@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.32] – 2026-04-06
+
+### Removed
+- Removed the live subtitle font and size controls from the web-client plugin as it caused UI persistence issues and was unnecessary for some users.
+
 ## [v1.0.31] – 2026-04-03
 
 ### Added
