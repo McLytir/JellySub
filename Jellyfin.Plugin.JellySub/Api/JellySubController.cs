@@ -740,20 +740,7 @@ public sealed class JellySubController : ControllerBase
     private List<BaseItem> GetMediaItems(BaseItem rootItem)
     {
         var items = new List<BaseItem>();
-
-        if (rootItem is Folder folder)
-        {
-            items.AddRange(folder.GetRecursiveChildren()
-                .Where(i => i is Video or Episode)
-                .Where(i => !string.IsNullOrEmpty(i.Path)));
-        }
-
-        if (!string.IsNullOrEmpty(rootItem.Path) &&
-            rootItem is not Folder &&
-            rootItem is Video)
-        {
-            items.Add(rootItem);
-        }
+        FindMediaRecursive(rootItem, items);
 
         return items
             .GroupBy(i => i.Id)
@@ -766,11 +753,30 @@ public sealed class JellySubController : ControllerBase
             .ToList();
     }
 
+    private void FindMediaRecursive(BaseItem root, List<BaseItem> items)
+    {
+        if (root is Video or Episode)
+        {
+            if (!string.IsNullOrEmpty(root.Path)) items.Add(root);
+            return;
+        }
+
+        if (root is Folder folder)
+        {
+            // Use Children property which is stable across 10.10/10.11
+            foreach (var child in folder.Children)
+            {
+                FindMediaRecursive(child, items);
+            }
+        }
+    }
+
     private List<BaseItem> GetAllLibraryMediaItems()
-        => _libraryManager.RootFolder
-            .GetRecursiveChildren()
-            .Where(i => i is Video or Episode)
-            .Where(i => !string.IsNullOrEmpty(i.Path))
+    {
+        var items = new List<BaseItem>();
+        FindMediaRecursive(_libraryManager.RootFolder, items);
+
+        return items
             .GroupBy(i => i.Id)
             .Select(g => g.First())
             .OrderBy(i => i is Episode ? 0 : 1)
@@ -779,6 +785,7 @@ public sealed class JellySubController : ControllerBase
             .ThenBy(i => i.Path)
             .ThenBy(i => i.Name)
             .ToList();
+    }
 
     private async Task<RestyleSubtitlesResponseDto> RestyleMediaItemsAsync(
         IReadOnlyList<BaseItem> mediaItems,

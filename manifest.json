@@ -6,8 +6,16 @@
     "overview": "Download subtitles for your media without any account. Features assisted search, series batch download with per-uploader matching, library scan, and optional auto-sync.",
     "owner": "McLytir",
     "category": "Subtitles",
-    "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/assets/logo.png",
+    "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/Jellyfin.Plugin.JellySub/Web/icon.png",
     "versions": [
+      {
+        "version": "1.0.40.0",
+        "changelog": "\n### Fixed\n- Critical: Replaced Folder.GetRecursiveChildren() (removed in newer Jellyfin builds) with a custom recursive traversal using folder.Children. This fixes the crash that caused batch analysis and library scan to fail entirely.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/McLytir/JellySub/releases/download/v1.0.40/jellysub_1.0.40.0.zip",
+        "checksum": "00000000000000000000000000000000",
+        "timestamp": "2026-04-08T14:00:00Z"
+      },
       {
         "version": "1.0.39.0",
         "changelog": "\n### Fixed\n- Added even more robust error logging to the batch panel to capture hidden network errors in the console.",

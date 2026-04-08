@@ -187,11 +187,11 @@ public sealed class LibraryScanTask : IScheduledTask
             return;
         }
 
-        // Gather all movies + episodes without depending on ILibraryManager.GetItemList,
-        // whose return type changed between Jellyfin 10.10 and 10.11.
-        var videos = _libraryManager.RootFolder
-            .GetRecursiveChildren()
-            .Where(i => i is Episode or Video)
+        // Gather all movies + episodes without depending on broken GetRecursiveChildren
+        var items = new List<BaseItem>();
+        FindMediaRecursive(_libraryManager.RootFolder, items);
+
+        var videos = items
             .Where(i => !string.IsNullOrEmpty(i.Path) && File.Exists(i.Path))
             .GroupBy(i => i.Id)
             .Select(g => g.First())
@@ -259,6 +259,23 @@ public sealed class LibraryScanTask : IScheduledTask
             logSnapshot.Count(e => e.Status == "Downloaded"),
             logSnapshot.Count(e => e.Status == "NotFound"),
             logSnapshot.Count(e => e.Status is "Failed" or "Error"));
+    }
+
+    private void FindMediaRecursive(BaseItem root, List<BaseItem> items)
+    {
+        if (root is Video or Episode)
+        {
+            if (!string.IsNullOrEmpty(root.Path)) items.Add(root);
+            return;
+        }
+
+        if (root is Folder folder)
+        {
+            foreach (var child in folder.Children)
+            {
+                FindMediaRecursive(child, items);
+            }
+        }
     }
 
     private static SubtitleSearchRequest BuildRequest(BaseItem item, string lang)

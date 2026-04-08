@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.40] – 2026-04-08
+
+### Fixed
+- **Critical**: Replaced `Folder.GetRecursiveChildren()` (removed in newer Jellyfin builds) with a custom recursive traversal using `folder.Children`. This fixes the "Method not found" crash that caused batch analysis and library scan to fail entirely.
+
 ## [v1.0.39] – 2026-04-06
 
 ### Fixed
