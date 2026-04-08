@@ -90,20 +90,31 @@
       <div id="batchPanel" style="display:none">
         <h3 class="sectionTitle" style="margin:0 0 12px">Series / folder batch download</h3>
 
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px">
-          <div class="inputContainer" style="flex:1;min-width:240px;margin:0">
-            <label class="inputLabel" for="batchItemId">Series or Season — Jellyfin Item ID</label>
-            <input is="emby-input" type="text" id="batchItemId" placeholder="UUID of the series / season" />
+        <div style="background:rgba(255,255,255,.05);padding:16px;border-radius:8px;margin-bottom:20px">
+          <div class="inputContainer" style="margin-bottom:12px">
+            <label class="inputLabel" for="batchSearchInput">Search library for series or folder</label>
+            <div style="display:flex;gap:8px">
+              <input is="emby-input" type="text" id="batchSearchInput" placeholder="Type series name (e.g. The Office)..." style="flex:1" />
+              <button is="emby-button" type="button" class="raised button-alt" id="btnSearchLibrarySeries">Find</button>
+            </div>
+            <div id="batchSearchResults" style="display:none;margin-top:8px;max-height:200px;overflow-y:auto;background:rgba(0,0,0,.2);border-radius:4px;padding:4px"></div>
           </div>
-          <div class="inputContainer" style="width:130px;margin:0">
-            <label class="inputLabel" for="batchLang">Language</label>
-            <input is="emby-input" type="text" id="batchLang" placeholder="en" />
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+            <div class="inputContainer" style="flex:1;min-width:240px;margin:0">
+              <label class="inputLabel" for="batchItemId">Selected Item ID</label>
+              <input is="emby-input" type="text" id="batchItemId" placeholder="UUID will appear here" />
+            </div>
+            <div class="inputContainer" style="width:130px;margin:0">
+              <label class="inputLabel" for="batchLang">Language</label>
+              <input is="emby-input" type="text" id="batchLang" placeholder="en" />
+            </div>
+            <div style="display:flex;gap:6px">
+              <button is="emby-button" type="button" class="raised" id="btnBatchModeAuto">Auto</button>
+              <button is="emby-button" type="button" class="raised button-alt" id="btnBatchModeGuided">Guided</button>
+            </div>
+            <button is="emby-button" type="button" class="raised" id="btnBatchAnalyze" style="background:#2196F3;color:#fff">Search & Analyse</button>
           </div>
-          <div style="display:flex;gap:6px">
-            <button is="emby-button" type="button" class="raised" id="btnBatchModeAuto">Auto</button>
-            <button is="emby-button" type="button" class="raised button-alt" id="btnBatchModeGuided">Guided</button>
-          </div>
-          <button is="emby-button" type="button" class="raised" id="btnBatchAnalyze">Analyse</button>
         </div>
 
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:-8px 0 14px">
@@ -176,23 +187,25 @@
       </div>
 
       <div id="scanPanel" style="display:none">
-        <h3 class="sectionTitle" style="margin:0 0 12px">Library scan</h3>
-        <p id="scanContextHint" style="display:none;color:#aaa;max-width:640px"></p>
-        <p style="color:#aaa;max-width:640px">
-          Scans your library, finds video files missing a subtitle for your configured preferred languages,
-          and auto-downloads the best available match from all enabled sources.
-        </p>
-
-        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-          <button is="emby-button" type="button" class="raised" id="btnStartScan">
-            ▶ Start Scan
-          </button>
-          <span id="scanRunning" style="display:none;color:#2196F3">
-            ⟳ Scan in progress…
-          </span>
-          <button is="emby-button" type="button" class="raised button-alt" id="btnRefreshStatus">
-            Refresh status
-          </button>
+        <h3 class="sectionTitle" style="margin:0 0 12px">Library-wide subtitle scan</h3>
+        <p id="scanContextHint" style="display:none;color:#aaa;max-width:640px;margin-bottom:12px"></p>
+        
+        <div style="background:rgba(255,255,255,.05);padding:16px;border-radius:8px;margin-bottom:20px;max-width:700px">
+          <p style="color:#eee;margin:0 0 12px">
+            This operation will scan your <strong>entire library</strong> (or the selected folder) and find all video files missing subtitles 
+            for your preferred languages. It then automatically downloads the best matching subtitle for each.
+          </p>
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <button is="emby-button" type="button" class="raised" id="btnStartScan" style="background:#4CAF50;color:#000;font-weight:bold;padding:10px 20px">
+              🚀 Start Full Library Scan
+            </button>
+            <span id="scanRunning" style="display:none;color:#2196F3;font-weight:600">
+              ⟳ Scan in progress...
+            </span>
+            <button is="emby-button" type="button" class="raised button-alt" id="btnRefreshStatus">
+              Check current status
+            </button>
+          </div>
         </div>
 
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:20px">

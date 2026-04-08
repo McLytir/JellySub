@@ -42,6 +42,10 @@ export default function (view, params) {
     view.querySelector('#btnBatchModeAuto').addEventListener('click',   () => setBatchMode(view, 'auto'));
     view.querySelector('#btnBatchModeGuided').addEventListener('click', () => setBatchMode(view, 'guided'));
     view.querySelector('#btnBatchAnalyze').addEventListener('click', () => analyzeBatch(view));
+    view.querySelector('#btnSearchLibrarySeries').addEventListener('click', () => searchLibraryForSeries(view));
+    view.querySelector('#batchSearchInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') searchLibraryForSeries(view);
+    });
     view.querySelector('#btnBatchRestyle').addEventListener('click', () => restyleBatchSubtitles(view));
     view.querySelector('#btnConfirmDownload').addEventListener('click', () => confirmBatchDownload(view));
     view.querySelector('#btnCopyCmd').addEventListener('click', () => {
@@ -356,6 +360,53 @@ function setBatchMode(view, mode) {
     hint.textContent = mode === 'auto'
         ? 'Auto mode: best subtitle is downloaded silently for every episode.'
         : 'Guided mode: you pick the subtitle for episode 1; the plugin matches the same uploader / release for the rest.';
+}
+
+async function searchLibraryForSeries(view) {
+    const query = view.querySelector('#batchSearchInput').value.trim();
+    if (!query) return;
+
+    const resultsContainer = view.querySelector('#batchSearchResults');
+    resultsContainer.innerHTML = '<div style="padding:8px;color:#aaa">Searching library...</div>';
+    resultsContainer.style.display = 'block';
+
+    try {
+        const userId = ApiClient.getCurrentUserId();
+        const res = await ApiClient.getItems(userId, {
+            searchTerm: query,
+            includeItemTypes: 'Series,Season,BoxSet,Folder',
+            recursive: true,
+            limit: 10
+        });
+
+        const items = res.Items || [];
+        if (!items.length) {
+            resultsContainer.innerHTML = '<div style="padding:8px;color:#f44336">No matching items found in your library.</div>';
+            return;
+        }
+
+        resultsContainer.innerHTML = '';
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.style.cssText = 'padding:8px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:10px';
+            div.innerHTML = `
+                <div style="flex:1">
+                    <div style="font-weight:600">${escHtml(item.Name)}</div>
+                    <div style="font-size:11px;color:#888">${item.Type}${item.ProductionYear ? ' · ' + item.ProductionYear : ''}</div>
+                </div>
+                <button is="emby-button" type="button" class="raised button-alt" style="font-size:11px;padding:4px 8px">Select</button>
+            `;
+            div.addEventListener('click', () => {
+                view.querySelector('#batchItemId').value = item.Id;
+                view.querySelector('#batchSearchInput').value = item.Name;
+                resultsContainer.style.display = 'none';
+                Dashboard.toast(`Selected: ${item.Name}`);
+            });
+            resultsContainer.appendChild(div);
+        });
+    } catch (e) {
+        resultsContainer.innerHTML = `<div style="padding:8px;color:#f44336">Error: ${e}</div>`;
+    }
 }
 
 async function analyzeBatch(view) {

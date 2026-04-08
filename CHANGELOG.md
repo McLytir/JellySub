@@ -5,6 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.37] – 2026-04-06
+
+### Added
+- Added a library search box to the Batch Subtitles panel to easily find series and seasons without needing to manually paste a Jellyfin Item ID.
+
+### Improved
+- Renamed the "Analyse" button to "Search & Analyse" in the batch panel for better clarity.
+- Improved the Library Scan UI with clearer instructions and status checks.
+
 ## [v1.0.36] – 2026-04-06
 
 ### Fixed
