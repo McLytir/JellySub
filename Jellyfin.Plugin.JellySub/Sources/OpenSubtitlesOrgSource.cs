@@ -148,27 +148,39 @@ public sealed class OpenSubtitlesOrgSource : ISubtitleSource
         CancellationToken ct)
     {
         var results = new List<SubtitleResult>();
+        var seenSubtitleIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        // Prefer exact IMDb lookups when available; fall back to title search.
+        // 1. Try IMDb lookup if available
         if (!string.IsNullOrWhiteSpace(request.ImdbId))
         {
             var imdbResults = await FetchResultsAsync(
                 BuildImdbSearchUrl(request.ImdbId, lang), request, ct).ConfigureAwait(false);
-            results.AddRange(imdbResults);
 
-            if (results.Count > 0)
+            foreach (var r in imdbResults)
             {
-                return results;
+                if (seenSubtitleIds.Add(r.Id))
+                {
+                    results.Add(r);
+                }
             }
         }
 
+        // 2. Also perform Title search to increase coverage (or as fallback)
         var title = BuildSearchTitle(request);
-        if (string.IsNullOrWhiteSpace(title))
+        if (!string.IsNullOrWhiteSpace(title))
         {
-            return results;
+            var titleResults = await FetchResultsAsync(
+                BuildTitleSearchUrl(title, lang), request, ct).ConfigureAwait(false);
+
+            foreach (var r in titleResults)
+            {
+                if (seenSubtitleIds.Add(r.Id))
+                {
+                    results.Add(r);
+                }
+            }
         }
 
-        results.AddRange(await FetchResultsAsync(BuildTitleSearchUrl(title, lang), request, ct).ConfigureAwait(false));
         return results;
     }
 

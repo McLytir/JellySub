@@ -63,6 +63,7 @@ public sealed class SeriesMatchingService
                     SeriesTitle   = isEpisodeLike ? episode.SeriesTitle : null,
                     SeasonNumber  = isEpisodeLike ? episode.SeasonNumber : null,
                     EpisodeNumber = isEpisodeLike ? episode.EpisodeNumber : null,
+                    ImdbId        = episode.ImdbId,
                     Languages     = new List<string> { language },
                     MediaFilePath = episode.MediaPath,
                 };

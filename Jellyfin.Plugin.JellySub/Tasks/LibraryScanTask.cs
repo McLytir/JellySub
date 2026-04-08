@@ -274,14 +274,22 @@ public sealed class LibraryScanTask : IScheduledTask
 
         // IMDb ID
         var imdb = item.GetProviderId(MetadataProvider.Imdb);
+
+        // Fallback to parent IMDb if episode doesn't have one
+        if (string.IsNullOrEmpty(imdb) && item is Episode ep)
+        {
+            var series = ep.Series;
+            imdb = series?.GetProviderId(MetadataProvider.Imdb);
+        }
+
         if (!string.IsNullOrEmpty(imdb)) req.ImdbId = imdb;
 
-        if (item is Episode ep)
+        if (item is Episode episode)
         {
-            req.SeriesTitle   = ep.SeriesName;
-            req.Title         = ep.SeriesName;
-            req.SeasonNumber  = ep.ParentIndexNumber;
-            req.EpisodeNumber = ep.IndexNumber;
+            req.SeriesTitle   = episode.SeriesName;
+            req.Title         = episode.SeriesName;
+            req.SeasonNumber  = episode.ParentIndexNumber;
+            req.EpisodeNumber = episode.IndexNumber;
         }
 
         return req;

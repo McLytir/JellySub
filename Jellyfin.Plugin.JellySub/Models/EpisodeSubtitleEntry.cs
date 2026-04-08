@@ -27,6 +27,9 @@ public sealed class EpisodeSubtitleEntry
     /// <summary>Episode number.</summary>
     public int EpisodeNumber { get; set; }
 
+    /// <summary>IMDb ID if available.</summary>
+    public string? ImdbId { get; set; }
+
     /// <summary>True if a subtitle for the requested language already exists.</summary>
     public bool AlreadyHasSubtitle { get; set; }
 

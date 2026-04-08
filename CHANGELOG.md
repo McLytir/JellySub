@@ -5,6 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.34] – 2026-04-06
+
+### Improved
+- Greatly improved search coverage and reliability for series episodes and library scans by merging results from both IMDb-based and title-based lookups in OpenSubtitles.
+- Episodes now correctly fall back to the parent series' IMDb ID when their own metadata is missing, improving batch-download matching.
+
 ## [v1.0.33] – 2026-04-06
 
 ### Fixed
