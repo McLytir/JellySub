@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/McLytir/JellySub/main/assets/logo.png",
     "versions": [
       {
+        "version": "1.0.38.0",
+        "changelog": "\n### Fixed\n- Fixed an \"[object Response]\" error in the batch panel by improving error handling and backend validation for Item IDs.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/McLytir/JellySub/releases/download/v1.0.38/jellysub_1.0.38.0.zip",
+        "checksum": "00000000000000000000000000000000",
+        "timestamp": "2026-04-06T15:00:00Z"
+      },
+      {
         "version": "1.0.37.0",
         "changelog": "\n### Added\n- Added a library search box to the Batch Subtitles panel to easily find series and seasons without needing to manually paste a Jellyfin Item ID.\n\n### Improved\n- Renamed the \"Analyse\" button to \"Search & Analyse\" in the batch panel for better clarity.\n- Improved the Library Scan UI with clearer instructions and status checks.",
         "targetAbi": "10.10.0.0",

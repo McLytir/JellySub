@@ -439,7 +439,10 @@ async function analyzeBatch(view) {
             await loadBatchEp1Candidates(view, data, lang);
         }
     } catch (e) {
-        Dashboard.processErrorResponse({ statusText: 'Analyse failed: ' + e });
+        let msg = e;
+        if (e && e.responseText) msg = e.responseText;
+        else if (e && e.message) msg = e.message;
+        Dashboard.processErrorResponse({ statusText: 'Analyse failed: ' + msg });
     } finally {
         Dashboard.hideLoadingMsg();
     }

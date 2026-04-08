@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.38] – 2026-04-06
+
+### Fixed
+- Fixed an "[object Response]" error in the batch panel by improving error handling and backend validation for Item IDs.
+
 ## [v1.0.37] – 2026-04-06
 
 ### Added

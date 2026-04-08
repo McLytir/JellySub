@@ -257,31 +257,44 @@ public sealed class JellySubController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult<SeriesAnalysisDto> SeriesAnalyze([FromBody] SeriesAnalyzeRequestDto dto)
     {
-        var item = _libraryManager.GetItemById(Guid.Parse(dto.ItemId));
-        if (item is null)
+        if (!Guid.TryParse(dto.ItemId, out var guid))
         {
-            return NotFound();
+            return BadRequest("Invalid Jellyfin Item ID format.");
         }
 
-        var episodes = GetMediaItems(item);
-        var language = string.IsNullOrWhiteSpace(dto.Language)
-            ? Plugin.Instance!.Configuration.PreferredLanguages.FirstOrDefault() ?? "en"
-            : dto.Language;
-
-        var entries = episodes.Select(ep => new EpisodeEntryDto
+        var item = _libraryManager.GetItemById(guid);
+        if (item is null)
         {
-            ItemId        = ep.Id.ToString(),
-            Label         = BuildMediaLabel(ep),
-            SeasonNumber  = ep is Episode episode ? episode.ParentIndexNumber ?? 0 : 0,
-            EpisodeNumber = ep is Episode episode2 ? episode2.IndexNumber ?? 0 : 0,
-            HasSubtitle   = SubtitleFileService.SubtitleExists(ep.Path!, language),
-        }).ToList();
+            return NotFound("Item not found in library.");
+        }
 
-        return Ok(new SeriesAnalysisDto
+        try
         {
-            SeriesTitle = item.Name,
-            Episodes    = entries,
-        });
+            var episodes = GetMediaItems(item);
+            var language = string.IsNullOrWhiteSpace(dto.Language)
+                ? Plugin.Instance!.Configuration.PreferredLanguages.FirstOrDefault() ?? "en"
+                : dto.Language;
+
+            var entries = episodes.Select(ep => new EpisodeEntryDto
+            {
+                ItemId        = ep.Id.ToString(),
+                Label         = BuildMediaLabel(ep),
+                SeasonNumber  = ep is Episode episode ? episode.ParentIndexNumber ?? 0 : 0,
+                EpisodeNumber = ep is Episode episode2 ? episode2.IndexNumber ?? 0 : 0,
+                HasSubtitle   = SubtitleFileService.SubtitleExists(ep.Path!, language),
+            }).ToList();
+
+            return Ok(new SeriesAnalysisDto
+            {
+                SeriesTitle = item.Name,
+                Episodes    = entries,
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Series analysis failed for item {ItemId}", dto.ItemId);
+            return StatusCode(500, "Internal server error during analysis: " + ex.Message);
+        }
     }
 
     /// <summary>
