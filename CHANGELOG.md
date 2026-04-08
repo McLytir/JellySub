@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.33] – 2026-04-06
+
+### Fixed
+- Fixed an "undefined" popup message when running the web-client auto-installer from the plugin settings page.
+
 ## [v1.0.32] – 2026-04-06
 
 ### Removed

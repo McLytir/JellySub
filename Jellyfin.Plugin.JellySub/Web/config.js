@@ -272,9 +272,11 @@ async function runWebClientAction(view, endpoint, label) {
             type: 'POST',
             url: ApiClient.getUrl(`${API}/webclient/${endpoint}`),
         });
-        const ok = res.success ? '✓' : '✗';
-        const details = (res.results || []).map(r => `${r.path}: ${r.status}${r.message ? ' — ' + r.message : ''}`).join('\n');
-        Dashboard.alert(`${ok} ${res.message}${details ? `\n\n${details}` : ''}`);
+        const ok = (res.success || res.Success) ? '✓' : '✗';
+        const results = res.results || res.Results || [];
+        const msg = res.message || res.Message || 'Action completed.';
+        const details = results.map(r => `${r.path || r.Path}: ${r.status || r.Status}${(r.message || r.Message) ? ' — ' + (r.message || r.Message) : ''}`).join('\n');
+        Dashboard.alert(`${ok} ${msg}${details ? `\n\n${details}` : ''}`);
         await loadWebClientStatus(view);
     } catch (e) {
         Dashboard.alert(`Web-client ${label} failed: ` + e);

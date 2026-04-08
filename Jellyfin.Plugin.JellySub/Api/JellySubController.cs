@@ -646,11 +646,11 @@ public sealed class JellySubController : ControllerBase
         var patchedCount = results.Count(r => r.Status == "Patched");
         return Ok(new
         {
-            Success = patchedCount > 0,
-            Message = patchedCount > 0
+            success = patchedCount > 0,
+            message = patchedCount > 0
                 ? $"Patched {patchedCount} default Jellyfin web root(s). Restart Jellyfin / Jellyfin Desktop and clear cache."
                 : "No default Jellyfin web root could be patched automatically. Download the platform script and run it manually on the machine hosting the Jellyfin web files.",
-            Results = results,
+            results = results,
         });
     }
 
@@ -664,11 +664,11 @@ public sealed class JellySubController : ControllerBase
         var revertedCount = results.Count(r => r.Status == "Reverted");
         return Ok(new
         {
-            Success = revertedCount > 0,
-            Message = revertedCount > 0
+            success = revertedCount > 0,
+            message = revertedCount > 0
                 ? $"Reverted {revertedCount} default Jellyfin web root(s). Restart Jellyfin / Jellyfin Desktop and clear cache."
                 : "No default Jellyfin web root could be reverted automatically. Download the platform uninstall script and run it manually on the machine hosting the Jellyfin web files.",
-            Results = results,
+            results = results,
         });
     }
 

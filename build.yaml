@@ -4,7 +4,7 @@
 
 name: "JellySub"
 guid: "a8b56a08-4e33-4a8c-b3e1-24e3b8b1e6c1"
-version: "1.0.32.0"
+version: "1.0.33.0"
 targetAbi: "10.10.0.0"
 framework: "net8.0"
 owner: "McLytir"
