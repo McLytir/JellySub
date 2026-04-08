@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.36] – 2026-04-06
+
+### Fixed
+- Fixed a compilation error in the API controller related to metadata provider ambiguity.
+
 ## [v1.0.35] – 2026-04-06
 
 ### Improved

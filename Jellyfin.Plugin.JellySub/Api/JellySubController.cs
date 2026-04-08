@@ -309,7 +309,7 @@ public sealed class JellySubController : ControllerBase
             SeriesTitle   = ep is Episode episode ? episode.SeriesName : null,
             SeasonNumber  = ep is Episode episode2 ? episode2.ParentIndexNumber ?? 0 : 0,
             EpisodeNumber = ep is Episode episode3 ? episode3.IndexNumber ?? 0 : 0,
-            ImdbId        = ep.GetProviderId(MetadataProvider.Imdb) ?? seriesItem.GetProviderId(MetadataProvider.Imdb),
+            ImdbId        = ep.GetProviderId(MediaBrowser.Model.Entities.MetadataProvider.Imdb) ?? seriesItem.GetProviderId(MediaBrowser.Model.Entities.MetadataProvider.Imdb),
             AlreadyHasSubtitle = SubtitleFileService.SubtitleExists(ep.Path!, language),
             ChosenSubtitle = ep.Id.ToString().Equals(dto.AnchorItemId, StringComparison.OrdinalIgnoreCase)
                 ? DtoToResult(dto.Anchor)
