@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v1.0.39] – 2026-04-06
+
+### Fixed
+- Added even more robust error logging to the batch panel to capture hidden network errors in the console.
+
 ## [v1.0.38] – 2026-04-06
 
 ### Fixed

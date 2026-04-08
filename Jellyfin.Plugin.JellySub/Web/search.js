@@ -439,9 +439,14 @@ async function analyzeBatch(view) {
             await loadBatchEp1Candidates(view, data, lang);
         }
     } catch (e) {
-        let msg = e;
-        if (e && e.responseText) msg = e.responseText;
-        else if (e && e.message) msg = e.message;
+        console.error('[JellySub] Analyse failed details:', e);
+        let msg = 'Unknown error';
+        try {
+            if (e && e.statusText) msg = `${e.status} ${e.statusText}`;
+            else if (e && e.message) msg = e.message;
+            else msg = String(e);
+        } catch (inner) { msg = String(e); }
+        
         Dashboard.processErrorResponse({ statusText: 'Analyse failed: ' + msg });
     } finally {
         Dashboard.hideLoadingMsg();
